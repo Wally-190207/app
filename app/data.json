@@ -1,0 +1,89 @@
+[
+  {
+    "id": "model-hinh-1-1",
+    "title": "Mô hình mạch điện",
+    "category": "1.1. Các khái niệm cơ bản trong mạch điện - 1.1.1. Mô hình mạch điện",
+    "created_at": "2026-10-27T18:24:41.176533",
+    "status": "completed",
+    "symbol": "1",
+    "diagram_type": "fig_1_1",
+    "concept": "Mạch điện là tập hợp các thiết bị điện nối với nhau bằng các dây dẫn tạo thành những mạch kín trong đó dòng điện có thể chạy qua. Mạch điện thường gồm các phần tử: nguồn điện, phụ tải (tải), dây dẫn. Ngoài ra còn có các thiết bị phụ trợ để bảo vệ và điều khiển như cầu dao, áp tô mát, cầu chì, rơle...",
+    "devices": [
+      {
+        "device_id": "dev-be8ef52d",
+        "symbol": "Nguồn",
+        "name": "Nguồn điện",
+        "concept": "Nguồn điện là thiết bị điện tạo ra điện năng. Về nguyên lý, nguồn điện là thiết bị biến đổi các dạng năng lượng như cơ năng, hóa năng, nhiệt năng, năng lượng bức xạ mặt trời, v.v... thành điện năng.",
+        "details": "Ví dụ thực tế trong kỹ thuật: - Pin, ắc quy: Biến đổi hóa năng thành điện năng. - Máy phát điện: Biến đổi cơ năng thành điện năng. - Pin mặt trời: Biến đổi năng lượng bức xạ mặt trời thành điện năng."
+      },
+      {
+        "device_id": "dev-4d61c5cd",
+        "symbol": "Tải",
+        "name": "Phụ tải (Tải)",
+        "concept": "Tải là các thiết bị tiêu thụ điện năng và biến đổi điện năng thành các dạng năng lượng khác như cơ năng, nhiệt năng, quang năng, v.v...",
+        "details": "Ví dụ thực tế trong kỹ thuật: - Động cơ điện: Tiêu thụ điện năng và biến điện năng thành cơ năng. - Bàn là, bếp điện: Biến điện năng thành nhiệt năng. - Bóng đèn: Biến điện năng thành quang năng."
+      },
+      {
+        "device_id": "dev-4e28d179",
+        "symbol": "Dây dẫn",
+        "name": "Dây dẫn",
+        "concept": "Dây dẫn dùng để dẫn điện từ nguồn đến phụ tải, nối các thiết bị điện tạo thành mạch kín.",
+        "details": "Ngoài nguồn điện, phụ tải và dây dẫn, trên đường dây mạch điện còn lắp đặt các thiết bị phụ trợ để bảo vệ và điều khiển như: cầu dao, áp tô mát, cầu chì, rơle..."
+      }
+    ]
+  },
+  {
+    "id": "model-hinh-1-2",
+    "title": "Kết cấu hình học của mạch điện",
+    "category": "1.1. Các khái niệm cơ bản trong mạch điện - 1.1.2. Kết cấu hình học của mạch điện",
+    "created_at": "2026-10-27T18:24:41.176533",
+    "status": "completed",
+    "symbol": "2",
+    "diagram_type": "fig_1_2",
+    "concept": "Kết cấu hình học của mạch điện được mô tả thông qua các phần tử cơ bản (Nguồn, Tải, Dây dẫn) và các khái niệm hình học của mạch gồm: Nhánh, Nút và Vòng (mạch vòng).",
+    "devices": [
+      {
+        "device_id": "dev-5be699c1",
+        "symbol": "E1, E2",
+        "name": "Nguồn điện (E1, E2)",
+        "concept": "Nguồn điện trong sơ đồ Hình 1.2 gồm hai nguồn sức điện động E1 và E2 cung cấp điện năng cho mạch.",
+        "details": "- Nguồn E1: Nằm trên nhánh 1 (phía bên trái), nối tiếp với điện trở R1. - Nguồn E2: Nằm trên nhánh 2 (phía bên phải), nối tiếp với điện trở R2. - Ký hiệu: Hình tròn có mũi tên chỉ chiều sức điện động ở bên trong."
+      },
+      {
+        "device_id": "dev-0bad9fae",
+        "symbol": "R1, R2, R3",
+        "name": "Phụ tải / Điện trở (R1, R2, R3)",
+        "concept": "Các phần tử tiêu thụ điện năng đặc trưng bởi các điện trở R1, R2, R3 phân bố trên 3 nhánh của mạch điện.",
+        "details": "- Điện trở R1: Thuộc nhánh 1, có dòng điện I1 chạy qua. - Điện trở R2: Thuộc nhánh 2, có dòng điện I2 chạy qua. - Điện trở R3: Thuộc nhánh 3 (nhánh giữa nối giữa hai nút A và B), có dòng điện I3 chạy qua."
+      },
+      {
+        "device_id": "dev-85470dd7",
+        "symbol": "Dây dẫn",
+        "name": "Dây dẫn nối mạch",
+        "concept": "Dây dẫn dùng để dẫn điện và liên kết các phần tử E1, E2, R1, R2, R3 tạo thành các nhánh và mạch vòng khép kín.",
+        "details": "Trên sơ đồ kỹ thuật, dây dẫn được biểu diễn bằng các đoạn thẳng nối liền giữa các phần tử và giao nhau tại các nút A, B."
+      },
+      {
+        "device_id": "dev-47e988f8",
+        "symbol": "Nhánh (I1, I2, I3)",
+        "name": "Nhánh mạch điện",
+        "concept": "Nhánh là 1 đoạn mạch gồm những phần tử ghép nối tiếp nhau, trong đó có cùng 1 dòng điện chạy thông từ đầu nọ đến đầu kia.",
+        "details": "Trong Hình 1.2 bao gồm 3 nhánh: - Nhánh 1: Gồm nguồn E1 và điện trở R1 (có dòng điện I1 chạy qua). - Nhánh 2: Gồm nguồn E2 và điện trở R2 (có dòng điện I2 chạy qua). - Nhánh 3: Gồm điện trở R3 nối giữa nút A và nút B (có dòng điện I3 chạy qua)."
+      },
+      {
+        "device_id": "dev-5430da58",
+        "symbol": "Nút A, Nút B",
+        "name": "Nút mạch điện",
+        "concept": "Nút là giao điểm gặp nhau của 3 nhánh trở lên.",
+        "details": "Trong Hình 1.2 bao gồm 2 nút (ký hiệu bằng chấm tròn đen tại điểm giao của 3 nhánh): - Nút A: Điểm giao nhau phía trên của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3). - Nút B: Điểm giao nhau phía dưới của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3)."
+      },
+      {
+        "device_id": "dev-53f7cffd",
+        "symbol": "",
+        "name": "Vòng (mạch vòng)",
+        "concept": "Mạch vòng là một đường dẫn khép kín mà nó bắt đầu và kết thúc ở cùng một điểm đi qua các phần tử của mạch điện. (Khái niệm này không có ký hiệu riêng trên hình).",
+        "details": "Trong Hình 1.2 bao gồm 3 vòng: - Vòng 1: Bao gồm các phần tử: Nguồn E1, điện trở R1, điện trở R3. - Vòng 2: Bao gồm điện trở R2, nguồn E2 và điện trở R3. - Vòng 3: Bao gồm nguồn E1, điện trở R1, điện trở R2 và nguồn E2."
+      }
+    ]
+  }
+]
