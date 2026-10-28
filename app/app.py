@@ -3,15 +3,54 @@ import json
 import os
 import subprocess
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from datetime import datetime
-import streamlit as st
-import streamlit.components.v1 as components
 
-# Tự động khởi chạy Streamlit Server nếu người dùng nhấn nút Run (python app.py) trực tiếp trong VS Code
-if __name__ == "__main__" and not st.runtime.exists():
-    print("🚀 Đang khởi động Streamlit Web Server... Vui lòng mở link Local URL bên dưới:")
-    sys.exit(subprocess.call([sys.executable, "-m", "streamlit", "run", os.path.abspath(__file__)]))
+# ==========================================
+# 0. BOOTSTRAPPER: TỰ ĐỘNG CÀI ĐẶT STREAMLIT & KHỞI CHẠY SERVER
+# ==========================================
+def _ensure_streamlit_installed() -> None:
+    """
+    Kiểm tra và tự động cài đặt thư viện streamlit vào đúng Python Interpreter (sys.executable)
+    đang chạy (khắc phục triệt để lỗi ModuleNotFoundError trong Visual Studio / VS Code).
+    """
+    try:
+        import streamlit  # noqa: F401
+    except ModuleNotFoundError:
+        print("⚠️ Phát hiện môi trường Python hiện tại chưa có thư viện 'streamlit'.")
+        print(f"🔧 Đang tự động cài đặt 'streamlit' vào: {sys.executable} ...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+        except Exception:
+            try:
+                import ensurepip
+                ensurepip.bootstrap()
+            except Exception:
+                pass
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit"])
+        print("✅ Đã cài đặt 'streamlit' thành công!")
+
+
+_ensure_streamlit_installed()
+
+import streamlit as st  # noqa: E402
+import streamlit.components.v1 as components  # noqa: E402
+
+# Tự động khởi chạy Streamlit Server nếu người dùng nhấn nút Run (python app.py) trực tiếp trong VS / VS Code
+if __name__ == "__main__":
+    try:
+        is_running_in_streamlit = st.runtime.exists()
+    except Exception:
+        is_running_in_streamlit = False
+
+    if not is_running_in_streamlit:
+        script_path = os.path.abspath(__file__)
+        os.chdir(os.path.dirname(script_path))
+        print("🚀 Đang khởi động Streamlit Web Server... Vui lòng mở link Local URL bên dưới:")
+        sys.exit(subprocess.call([sys.executable, "-m", "streamlit", "run", script_path]))
 
 # ==========================================
 # 1. CẤU HÌNH TRANG & GIAO DIỆN CÔNG NGHỆ (TECH UI)
@@ -22,7 +61,8 @@ st.set_page_config(
     layout="wide"
 )
 
-DATA_FILE = "data.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
 
 def inject_tech_background_css() -> None:
@@ -161,7 +201,7 @@ def inject_tech_background_css() -> None:
 inject_tech_background_css()
 
 # ==========================================
-# 2. QUẢN LÝ DỮ LIỆU & LƯU TRỮ (DATA LAYER)
+# 2. QUẢN LÝ DỮ LIỆU, LƯU TRỮ & ĐỒNG BỘ GITHUB CLOUD (DATA LAYER)
 # ==========================================
 DEFAULT_DATA = [
     {
@@ -172,6 +212,8 @@ DEFAULT_DATA = [
         "status": "completed",
         "symbol": "H1.1",
         "diagram_type": "fig_1_1",
+        "diagram_image": "",
+        "hotspots": [],
         "concept": (
             "Mạch điện là tập hợp các thiết bị điện nối với nhau bằng các dây dẫn tạo thành những mạch kín "
             "trong đó dòng điện có thể chạy qua. Mạch điện thường gồm các phần tử: nguồn điện, phụ tải (tải), "
@@ -231,6 +273,8 @@ DEFAULT_DATA = [
         "status": "completed",
         "symbol": "H1.2",
         "diagram_type": "fig_1_2",
+        "diagram_image": "",
+        "hotspots": [],
         "concept": (
             "Kết cấu hình học của mạch điện được mô tả thông qua các phần tử cơ bản (Nguồn, Tải, Dây dẫn) "
             "và các khái niệm hình học của mạch gồm: Nhánh, Nút và Vòng (mạch vòng)."
@@ -321,8 +365,181 @@ DEFAULT_DATA = [
 ]
 
 
+def get_github_config() -> dict:
+    """
+    Lấy cấu hình kết nối GitHub API từ session_state (nếu nhập trực tiếp), st.secrets (trên Streamlit Cloud)
+    hoặc biến môi trường (os.environ).
+    """
+    token = ""
+    repo = ""
+    branch = "main"
+    file_path = "data.json"
+
+    # 1. Đọc từ st.secrets (Streamlit Cloud)
+    try:
+        if "GITHUB_TOKEN" in st.secrets:
+            token = str(st.secrets["GITHUB_TOKEN"]).strip()
+        if "GITHUB_REPO" in st.secrets:
+            repo = str(st.secrets["GITHUB_REPO"]).strip()
+        if "GITHUB_BRANCH" in st.secrets:
+            branch = str(st.secrets["GITHUB_BRANCH"]).strip() or "main"
+        if "GITHUB_FILE_PATH" in st.secrets:
+            file_path = str(st.secrets["GITHUB_FILE_PATH"]).strip() or "data.json"
+    except Exception:
+        pass
+
+    # 2. Dự phòng đọc từ biến môi trường hệ thống
+    if not token:
+        token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if not repo:
+        repo = os.environ.get("GITHUB_REPO", "").strip()
+    if os.environ.get("GITHUB_BRANCH"):
+        branch = os.environ.get("GITHUB_BRANCH", "main").strip()
+
+    # 3. Ưu tiên cấu hình tạm thời nếu người dùng nhập trực tiếp trên Sidebar
+    if "custom_github_config" in st.session_state:
+        custom_cfg = st.session_state.custom_github_config
+        if custom_cfg.get("token") and custom_cfg.get("repo"):
+            token = custom_cfg["token"].strip()
+            repo = custom_cfg["repo"].strip()
+            branch = custom_cfg.get("branch", "main").strip() or "main"
+
+    # Chuẩn hóa định dạng repo (loại bỏ https://github.com/ nếu người dùng dán nguyên link)
+    repo = repo.replace("https://github.com/", "").replace("http://github.com/", "").strip("/")
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+
+    return {
+        "token": token,
+        "repo": repo,
+        "branch": branch,
+        "path": file_path,
+        "enabled": bool(token and repo and "/" in repo)
+    }
+
+
+def github_pull_data() -> list | None:
+    """Tải nội dung file data.json trực tiếp từ kho chứa GitHub thông qua GitHub REST API."""
+    cfg = get_github_config()
+    if not cfg["enabled"]:
+        return None
+
+    api_url = (
+        f"https://api.github.com/repos/{cfg['repo']}/contents/{cfg['path']}"
+        f"?ref={urllib.parse.quote(cfg['branch'])}"
+    )
+    req = urllib.request.Request(
+        api_url,
+        headers={
+            "Authorization": f"Bearer {cfg['token']}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Model-DDT-Streamlit-App"
+        },
+        method="GET"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp_json = json.loads(resp.read().decode("utf-8"))
+            content_b64 = resp_json.get("content", "")
+            if content_b64:
+                decoded_str = base64.b64decode(content_b64).decode("utf-8")
+                return json.loads(decoded_str)
+    except Exception:
+        return None
+    return None
+
+
+def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Model DDT Web App") -> tuple[bool, str]:
+    """Đẩy (Commit & Push) toàn bộ dữ liệu data.json mới nhất thẳng lên GitHub thông qua GitHub REST API."""
+    cfg = get_github_config()
+    if not cfg["enabled"]:
+        return False, "Chưa cấu hình GitHub Token/Repo."
+
+    base_url = f"https://api.github.com/repos/{cfg['repo']}/contents/{cfg['path']}"
+    headers = {
+        "Authorization": f"Bearer {cfg['token']}",
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "Model-DDT-Streamlit-App"
+    }
+
+    # Bước 1: Lấy mã SHA hiện tại của file data.json trên nhánh GitHub (nếu file đã tồn tại)
+    current_sha = None
+    get_url = f"{base_url}?ref={urllib.parse.quote(cfg['branch'])}"
+    get_req = urllib.request.Request(get_url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(get_req, timeout=10) as resp:
+            meta = json.loads(resp.read().decode("utf-8"))
+            current_sha = meta.get("sha")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            return False, f"Lỗi kiểm tra file trên GitHub (HTTP {e.code})."
+    except Exception as e:
+        return False, f"Lỗi kết nối GitHub: {e}"
+
+    # Bước 2: Mã hóa Base64 và gửi lệnh PUT để cập nhật file trên GitHub
+    raw_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    b64_content = base64.b64encode(raw_bytes).decode("utf-8")
+
+    payload = {
+        "message": commit_msg,
+        "content": b64_content,
+        "branch": cfg["branch"]
+    }
+    if current_sha:
+        payload["sha"] = current_sha
+
+    put_req = urllib.request.Request(
+        base_url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="PUT"
+    )
+    try:
+        with urllib.request.urlopen(put_req, timeout=15) as resp:
+            if resp.status in (200, 201):
+                return True, ""
+            return False, f"GitHub trả về mã trạng thái: {resp.status}"
+    except urllib.error.HTTPError as e:
+        try:
+            err_detail = json.loads(e.read().decode("utf-8")).get("message", "")
+        except Exception:
+            err_detail = str(e)
+        return False, f"Lỗi ghi GitHub (HTTP {e.code}): {err_detail}"
+    except Exception as e:
+        return False, f"Không thể đồng bộ lên GitHub: {e}"
+
+
+def _normalize_loaded_models(data: list) -> list:
+    """Đảm bảo mọi mô hình và thiết bị đều có đủ các trường tương thích (diagram_image, hotspots, real_images)."""
+    for model in data:
+        if "diagram_image" not in model or not isinstance(model["diagram_image"], str):
+            model["diagram_image"] = ""
+        if "hotspots" not in model or not isinstance(model["hotspots"], list):
+            model["hotspots"] = []
+        for dev in model.get("devices", []):
+            if "real_images" not in dev or not isinstance(dev["real_images"], list):
+                dev["real_images"] = []
+    return data
+
+
 def load_data() -> list:
-    """Đọc dữ liệu từ file data.json. Đảm bảo mỗi thiết bị đều có danh sách real_images."""
+    """
+    Đọc dữ liệu từ GitHub (nếu đã cấu hình Auto-Sync) hoặc từ file data.json nội bộ.
+    Đảm bảo tương thích trường real_images, diagram_image và hotspots.
+    """
+    # 1. Ưu tiên kéo dữ liệu mới nhất từ GitHub nếu đã cấu hình
+    remote_data = github_pull_data()
+    if isinstance(remote_data, list) and remote_data:
+        normalized_remote = _normalize_loaded_models(remote_data)
+        try:
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(normalized_remote, f, ensure_ascii=False, indent=2)
+        except IOError:
+            pass
+        return normalized_remote
+
+    # 2. Đọc từ file data.json nội bộ nếu chưa cấu hình GitHub hoặc kho chưa có file
     if not os.path.exists(DATA_FILE):
         save_data(DEFAULT_DATA)
         return DEFAULT_DATA
@@ -333,20 +550,27 @@ def load_data() -> list:
         if data and all(item.get("symbol") in old_symbols for item in data):
             save_data(DEFAULT_DATA)
             return DEFAULT_DATA
-        # Đảm bảo tính tương thích cho trường real_images ở mọi thiết bị
-        for model in data:
-            for dev in model.get("devices", []):
-                if "real_images" not in dev or not isinstance(dev["real_images"], list):
-                    dev["real_images"] = []
-        return data
+        return _normalize_loaded_models(data)
     except (json.JSONDecodeError, IOError):
         return []
 
 
 def save_data(data: list) -> None:
-    """Ghi đè dữ liệu bền vững xuống file data.json."""
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """
+    Ghi đè dữ liệu bền vững xuống file data.json nội bộ, đồng thời tự động đồng bộ (Push)
+    lên GitHub Repository nếu đã cấu hình GitHub Auto-Sync.
+    """
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except IOError:
+        pass
+
+    cfg = get_github_config()
+    if cfg["enabled"]:
+        ok, err_msg = github_push_data(data)
+        if not ok:
+            st.warning(f"⚠️ Đã lưu tạm thời nhưng chưa thể đồng bộ lên GitHub: {err_msg}")
 
 
 def init_session_state() -> None:
@@ -367,7 +591,7 @@ init_session_state()
 def navigate_to_device_detail(model_id: str, dev: dict) -> None:
     """
     Callback xử lý chuyển sang trang chi tiết thiết bị ngay khi người dùng
-    nhấn vào ký hiệu thiết bị (trên bản vẽ SVG hoặc nút ký hiệu).
+    nhấn vào ký hiệu thiết bị (trên bản vẽ SVG, ảnh sơ đồ tùy chỉnh hoặc nút ký hiệu).
     """
     st.session_state.selected_model_id = model_id
     st.session_state.selected_device = dev
@@ -438,8 +662,41 @@ def format_devices_to_text(devices: list) -> str:
     )
 
 
+def validate_and_normalize_models_json(raw_data: list) -> tuple[list, str]:
+    """Kiểm tra tính hợp lệ và chuẩn hóa danh sách mô hình khi Import từ file data.json."""
+    if not isinstance(raw_data, list):
+        return [], "Cấu trúc file JSON không hợp lệ (Dữ liệu gốc phải là một danh sách mảng `[...]`)."
+    normalized = []
+    for idx, item in enumerate(raw_data, start=1):
+        if not isinstance(item, dict):
+            return [], f"Phần tử thứ {idx} trong JSON không phải là một đối tượng (Object)."
+        if not item.get("id") or not item.get("title") or "devices" not in item:
+            return [], f"Phần tử thứ {idx} thiếu các trường bắt buộc (`id`, `title`, `devices`)."
+        item.setdefault("category", "Chưa phân loại")
+        item.setdefault("created_at", datetime.now().isoformat())
+        item.setdefault("status", "completed")
+        item.setdefault("symbol", "N/A")
+        item.setdefault("concept", "")
+        if "diagram_image" not in item or not isinstance(item["diagram_image"], str):
+            item["diagram_image"] = ""
+        if "hotspots" not in item or not isinstance(item["hotspots"], list):
+            item["hotspots"] = []
+        if not isinstance(item["devices"], list):
+            return [], f"Trường `devices` của mô hình '{item.get('title')}' phải là một danh sách."
+        for dev in item["devices"]:
+            dev.setdefault("device_id", f"dev-{uuid.uuid4().hex[:8]}")
+            dev.setdefault("symbol", "")
+            dev.setdefault("name", "Thiết bị")
+            dev.setdefault("concept", "")
+            dev.setdefault("details", "")
+            if "real_images" not in dev or not isinstance(dev["real_images"], list):
+                dev["real_images"] = []
+        normalized.append(item)
+    return normalized, ""
+
+
 # ==========================================
-# 4. BẢN VẼ KỸ THUẬT SVG TƯƠNG TÁC (HÌNH 1.1 & HÌNH 1.2)
+# 4. BẢN VẼ KỸ THUẬT SVG (HÌNH 1.1 & HÌNH 1.2) & SƠ ĐỒ KHOANH VÙNG TÙY CHỈNH
 # ==========================================
 def render_interactive_svg_diagram(model: dict) -> None:
     """
@@ -737,13 +994,693 @@ def render_interactive_svg_diagram(model: dict) -> None:
     components.html(html_code, height=385 if diagram_type == "fig_1_2" else 345, scrolling=False)
 
 
+def render_custom_image_diagram(model: dict) -> None:
+    """
+    Hiển thị ảnh sơ đồ mô hình tùy chỉnh kèm các vùng đánh dấu ký hiệu (hotspots) đã được khoanh tay:
+    - Di chuột (hover) vào vùng khoanh: Làm sáng vùng ký hiệu và hiện tooltip tên thiết bị.
+    - Nhấn chuột trái (click) vào vùng khoanh: Kích hoạt nút thiết bị tương ứng để chuyển sang trang chi tiết.
+    """
+    diagram_img = model.get("diagram_image", "").strip()
+    if not diagram_img:
+        return
+
+    model_id = model["id"]
+    devices = model.get("devices", [])
+    symbol_devices = [d for d in devices if d.get("symbol", "").strip()]
+    sym_idx_map = {d["device_id"]: idx for idx, d in enumerate(symbol_devices)}
+    dev_map = {d["device_id"]: d for d in devices}
+
+    hotspots = model.get("hotspots", [])
+    hotspot_divs = []
+    for hs in hotspots:
+        dev_id = hs.get("device_id", "")
+        dev_info = dev_map.get(dev_id, {})
+        dev_name = dev_info.get("name") or hs.get("name", "Thiết bị")
+        dev_sym = dev_info.get("symbol") or hs.get("symbol", "")
+        sym_idx = sym_idx_map.get(dev_id, -1)
+        x = float(hs.get("x", 0))
+        y = float(hs.get("y", 0))
+        w = float(hs.get("w", 10))
+        h = float(hs.get("h", 10))
+        safe_name = dev_name.replace('"', "&quot;")
+        safe_sym = dev_sym.replace('"', "&quot;")
+        label_badge = dev_sym if dev_sym else dev_name
+
+        hotspot_divs.append(
+            f'<div class="custom-hs-box" '
+            f'data-dev-id="{dev_id}" data-sym="{safe_sym}" data-idx="{sym_idx}" data-name="{safe_name}" '
+            f'style="left:{x}%; top:{y}%; width:{w}%; height:{h}%;">'
+            f'<span class="hs-tag">{label_badge}</span>'
+            f'</div>'
+        )
+
+    hotspots_html = "\n".join(hotspot_divs)
+
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                margin: 0;
+                padding: 6px;
+                font-family: system-ui, -apple-system, sans-serif;
+                background: transparent;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                user-select: none;
+            }}
+            .custom-diagram-wrapper {{
+                position: relative;
+                display: inline-block;
+                max-width: 680px;
+                width: 100%;
+                border: 2px solid #38bdf8;
+                border-radius: 12px;
+                background: #f8fafc;
+                box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+                overflow: hidden;
+            }}
+            .custom-diagram-wrapper img {{
+                display: block;
+                width: 100%;
+                height: auto;
+                max-height: 400px;
+                object-fit: contain;
+                background: #ffffff;
+            }}
+            .custom-hs-box {{
+                position: absolute;
+                border: 2px dashed rgba(2, 132, 199, 0.75);
+                background: rgba(56, 189, 248, 0.14);
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.18s ease;
+                box-sizing: border-box;
+            }}
+            .custom-hs-box:hover {{
+                border: 2.5px solid #0284c7;
+                background: rgba(14, 165, 233, 0.32);
+                box-shadow: 0 0 14px rgba(2, 132, 199, 0.75);
+                transform: scale(1.015);
+                z-index: 20;
+            }}
+            .hs-tag {{
+                position: absolute;
+                top: -20px;
+                left: 0;
+                background: rgba(15, 23, 42, 0.9);
+                color: #38bdf8;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 1px 6px;
+                border-radius: 4px;
+                border: 1px solid rgba(56, 189, 248, 0.5);
+                white-space: nowrap;
+                pointer-events: none;
+            }}
+            #custom-floating-tooltip {{
+                position: fixed;
+                display: none;
+                background: rgba(15, 23, 42, 0.96);
+                color: #f8fafc;
+                padding: 7px 13px;
+                border-radius: 7px;
+                font-size: 13.5px;
+                font-weight: 500;
+                pointer-events: none;
+                z-index: 9999;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+                border: 1px solid #38bdf8;
+                white-space: nowrap;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="custom-diagram-wrapper">
+            <img src="{diagram_img}" alt="Sơ đồ mô hình" />
+            {hotspots_html}
+        </div>
+        <div id="custom-floating-tooltip"></div>
+
+        <script>
+            const tooltip = document.getElementById('custom-floating-tooltip');
+            const boxes = document.querySelectorAll('.custom-hs-box');
+            const modelId = "{model_id}";
+
+            function triggerStreamlitDeviceButton(devId, symText, idx) {{
+                const parentDoc = window.parent.document;
+                let btn = null;
+
+                // Tầng 1: Tìm theo key nút có ký hiệu hoặc nút không ký hiệu
+                const symKey = 'st-key-modal_sym_' + modelId + '_' + devId;
+                const noSymKey = 'st-key-modal_nosym_' + modelId + '_' + devId;
+                const keyContainer = parentDoc.querySelector('.' + symKey) || parentDoc.querySelector('.' + noSymKey);
+                if (keyContainer) {{
+                    btn = keyContainer.querySelector('button');
+                }}
+
+                // Tầng 2: Tìm theo nhãn văn bản ký hiệu
+                if (!btn && symText) {{
+                    const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
+                    const allBtns = dialogScope.querySelectorAll('button');
+                    for (const b of allBtns) {{
+                        const txt = (b.innerText || b.textContent || '').trim();
+                        if (txt === '🔣 ' + symText || txt.includes(symText)) {{
+                            btn = b;
+                            break;
+                        }}
+                    }}
+                }}
+
+                // Tầng 3: Tìm theo thứ tự nút ký hiệu
+                if (!btn && idx !== null && !isNaN(idx) && idx >= 0) {{
+                    const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
+                    const symBtns = Array.from(dialogScope.querySelectorAll('button')).filter(
+                        b => (b.innerText || b.textContent || '').includes('🔣')
+                    );
+                    if (symBtns[idx]) {{
+                        btn = symBtns[idx];
+                    }}
+                }}
+
+                if (btn) {{
+                    btn.click();
+                }}
+            }}
+
+            boxes.forEach(box => {{
+                box.addEventListener('mousemove', (e) => {{
+                    const devName = box.getAttribute('data-name');
+                    tooltip.innerHTML = "⚡ <b>" + devName + "</b> <span style='color:#38bdf8;font-size:12px;'>(Nhấn chuột trái để xem chi tiết)</span>";
+                    tooltip.style.display = 'block';
+                    let leftPos = e.clientX + 14;
+                    let topPos = e.clientY - 36;
+                    if (leftPos + 290 > window.innerWidth) {{
+                        leftPos = e.clientX - 270;
+                    }}
+                    if (topPos < 8) {{
+                        topPos = e.clientY + 18;
+                    }}
+                    tooltip.style.left = leftPos + 'px';
+                    tooltip.style.top = topPos + 'px';
+                }});
+
+                box.addEventListener('mouseleave', () => {{
+                    tooltip.style.display = 'none';
+                }});
+
+                box.addEventListener('click', (e) => {{
+                    e.stopPropagation();
+                    const devId = box.getAttribute('data-dev-id');
+                    const symText = box.getAttribute('data-sym');
+                    const idx = parseInt(box.getAttribute('data-idx'), 10);
+                    triggerStreamlitDeviceButton(devId, symText, idx);
+                }});
+            }});
+        </script>
+    </body>
+    </html>
+    """
+    components.html(html_code, height=430, scrolling=False)
+
+
+def sync_model_diagram_and_hotspots(model_id: str, diagram_image: str = None, hotspots: list = None) -> None:
+    """Cập nhật ảnh sơ đồ mô hình (diagram_image) và danh sách vùng đánh dấu (hotspots) vào bộ nhớ và data.json."""
+    for item in st.session_state.models_data:
+        if item["id"] == model_id:
+            if diagram_image is not None:
+                item["diagram_image"] = diagram_image
+            if hotspots is not None:
+                item["hotspots"] = hotspots
+            break
+    save_data(st.session_state.models_data)
+
+
+def render_visual_hotspot_editor_widget(model: dict, context_key: str = "editor") -> None:
+    """
+    Giao diện công cụ tải ảnh sơ đồ mô hình & kéo chuột khoanh vùng đánh dấu ký hiệu bằng tay (Visual Hotspot Editor).
+    """
+    model_id = model["id"]
+    devices = model.get("devices", [])
+
+    # 1. Khu vực tải lên hoặc cập nhật ảnh sơ đồ mô hình
+    with st.container(border=True):
+        st.markdown("##### 🖼️ Bước 1: Tải ảnh sơ đồ mô hình (hoặc dán URL ảnh)")
+        up_col1, up_col2 = st.columns([1.4, 1])
+        with up_col1:
+            uploaded_diag = st.file_uploader(
+                "Chọn file ảnh sơ đồ (.png, .jpg, .jpeg, .webp)",
+                type=["png", "jpg", "jpeg", "webp"],
+                key=f"diag_file_{context_key}_{model_id}"
+            )
+        with up_col2:
+            diag_url = st.text_input(
+                "Hoặc nhập URL ảnh sơ đồ",
+                value=model.get("diagram_image", "") if model.get("diagram_image", "").startswith("http") else "",
+                placeholder="https://example.com/circuit-diagram.png",
+                key=f"diag_url_{context_key}_{model_id}"
+            )
+
+        btn_img_col1, btn_img_col2 = st.columns([1, 1])
+        with btn_img_col1:
+            if st.button("📸 Cập nhật ảnh sơ đồ", key=f"btn_save_diag_{context_key}_{model_id}", type="primary", use_container_width=True):
+                if uploaded_diag is not None:
+                    mime = uploaded_diag.type or "image/png"
+                    b64_str = base64.b64encode(uploaded_diag.getvalue()).decode("utf-8")
+                    new_img_src = f"data:{mime};base64,{b64_str}"
+                    sync_model_diagram_and_hotspots(model_id, diagram_image=new_img_src)
+                    st.toast("Đã tải lên ảnh sơ đồ mô hình thành công!", icon="✅")
+                    st.rerun()
+                elif diag_url.strip():
+                    sync_model_diagram_and_hotspots(model_id, diagram_image=diag_url.strip())
+                    st.toast("Đã cập nhật URL ảnh sơ đồ thành công!", icon="✅")
+                    st.rerun()
+                else:
+                    st.error("Vui lòng chọn 1 file ảnh hoặc nhập đường dẫn URL ảnh sơ đồ!")
+        with btn_img_col2:
+            if model.get("diagram_image") and st.button(
+                "🗑️ Xóa ảnh sơ đồ tùy chỉnh",
+                key=f"btn_del_diag_{context_key}_{model_id}",
+                use_container_width=True
+            ):
+                sync_model_diagram_and_hotspots(model_id, diagram_image="", hotspots=[])
+                st.toast("Đã xóa ảnh sơ đồ tùy chỉnh và các vùng khoanh!", icon="🗑️")
+                st.rerun()
+
+    current_img = model.get("diagram_image", "").strip()
+    if not current_img:
+        st.info(
+            "💡 Mô hình này chưa có ảnh sơ đồ tùy chỉnh. Hãy tải lên 1 ảnh sơ đồ ở **Bước 1** phía trên để bắt đầu kéo chuột khoanh vùng đánh dấu ký hiệu bằng tay "
+            "(Hai bản vẽ SVG gốc **Hình 1.1** và **Hình 1.2** vẫn luôn được giữ nguyên 100%)."
+        )
+        return
+
+    if not devices:
+        st.warning("Mô hình này chưa có thiết bị nào. Vui lòng thêm thiết bị vào mô hình trước khi khoanh vùng ký hiệu.")
+        return
+
+    # 2. Khu vực kéo chuột khoanh vùng ký hiệu trực tiếp trên ảnh
+    st.markdown("##### 🎯 Bước 2: Chọn Thiết bị & Kéo chuột trái trên ảnh sơ đồ để khoanh vùng ký hiệu")
+    st.caption(
+        "Hướng dẫn: Chọn thiết bị ở thanh công cụ bên dưới ➡️ Nhấn giữ và kéo chuột trái trên ảnh để tạo vùng đánh dấu ➡️ "
+        "Nhấn nút **💾 Lưu vùng khoanh ký hiệu** để hoàn tất."
+    )
+
+    devices_json = json.dumps(
+        [{"device_id": d["device_id"], "symbol": d.get("symbol", ""), "name": d.get("name", "")} for d in devices],
+        ensure_ascii=False
+    )
+    initial_hotspots_json = json.dumps(model.get("hotspots", []), ensure_ascii=False)
+    bridge_key = f"hs_bridge_{context_key}_{model_id}"
+    save_btn_key = f"hs_save_btn_{context_key}_{model_id}"
+
+    editor_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                margin: 0;
+                padding: 8px;
+                font-family: system-ui, -apple-system, sans-serif;
+                background: #0f172a;
+                color: #f8fafc;
+                border: 1px solid rgba(56, 189, 248, 0.35);
+                border-radius: 12px;
+                user-select: none;
+            }}
+            .toolbar {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+                justify-content: space-between;
+                background: rgba(30, 41, 59, 0.9);
+                padding: 10px 12px;
+                border-radius: 8px;
+                border: 1px solid rgba(56, 189, 248, 0.25);
+                margin-bottom: 10px;
+            }}
+            .toolbar select {{
+                background: #0f172a;
+                color: #38bdf8;
+                border: 1px solid #38bdf8;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 13.5px;
+                font-weight: 600;
+                flex: 1;
+                min-width: 210px;
+            }}
+            .btn-tool {{
+                background: #1e293b;
+                color: #e2e8f0;
+                border: 1px solid rgba(148, 163, 184, 0.4);
+                border-radius: 6px;
+                padding: 6px 11px;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }}
+            .btn-tool:hover {{
+                border-color: #38bdf8;
+                color: #38bdf8;
+            }}
+            .btn-save-now {{
+                background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+                color: #ffffff;
+                border: 1px solid #7dd3fc;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+            }}
+            .btn-save-now:hover {{
+                filter: brightness(1.1);
+            }}
+            .canvas-stage-wrap {{
+                display: flex;
+                justify-content: center;
+                background: #070d19;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px dashed rgba(56, 189, 248, 0.35);
+            }}
+            #img-stage {{
+                position: relative;
+                display: inline-block;
+                max-width: 100%;
+                cursor: crosshair;
+                line-height: 0;
+            }}
+            #img-stage img {{
+                display: block;
+                max-width: 100%;
+                max-height: 360px;
+                width: auto;
+                height: auto;
+                background: #ffffff;
+                border-radius: 6px;
+                pointer-events: none;
+            }}
+            .drawn-box {{
+                position: absolute;
+                border: 2px solid #0284c7;
+                background: rgba(14, 165, 233, 0.24);
+                border-radius: 4px;
+                box-sizing: border-box;
+            }}
+            .drawn-box-label {{
+                position: absolute;
+                top: -19px;
+                left: 0;
+                background: #0f172a;
+                color: #7dd3fc;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 2px 6px;
+                border-radius: 4px;
+                border: 1px solid #38bdf8;
+                white-space: nowrap;
+                line-height: 1.2;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }}
+            .del-hs-btn {{
+                color: #f87171;
+                cursor: pointer;
+                font-weight: bold;
+                margin-left: 4px;
+            }}
+            #rubber-band {{
+                position: absolute;
+                display: none;
+                border: 2px dashed #22d3ee;
+                background: rgba(34, 211, 238, 0.25);
+                pointer-events: none;
+                box-sizing: border-box;
+            }}
+            .status-bar {{
+                margin-top: 8px;
+                font-size: 12.5px;
+                color: #94a3b8;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="toolbar">
+            <select id="device-select"></select>
+            <button type="button" class="btn-tool" id="undo-btn">↩️ Hoàn tác</button>
+            <button type="button" class="btn-tool" id="clear-btn">🗑️ Xóa hết vùng</button>
+            <button type="button" class="btn-save-now" id="apply-save-btn">💾 Áp dụng & Lưu vùng khoanh</button>
+        </div>
+
+        <div class="canvas-stage-wrap">
+            <div id="img-stage">
+                <img id="diagram-img" src="{current_img}" draggable="false" />
+                <div id="boxes-layer"></div>
+                <div id="rubber-band"></div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="hs-count-info">Đang tải...</span>
+            <span style="color:#38bdf8;">💡 Mẹo: Kéo chuột trái trên ảnh để vẽ khung khoanh vùng ký hiệu</span>
+        </div>
+
+        <script>
+            const devices = {devices_json};
+            let hotspots = {initial_hotspots_json};
+            const bridgeKeyClass = "st-key-{bridge_key}";
+            const saveBtnKeyClass = "st-key-{save_btn_key}";
+
+            const selectEl = document.getElementById('device-select');
+            const stageEl = document.getElementById('img-stage');
+            const boxesLayer = document.getElementById('boxes-layer');
+            const rubberBand = document.getElementById('rubber-band');
+            const countInfo = document.getElementById('hs-count-info');
+
+            devices.forEach((d) => {{
+                const opt = document.createElement('option');
+                opt.value = d.device_id;
+                const symLabel = d.symbol ? ("[" + d.symbol + "] ") : "[Không ký hiệu] ";
+                opt.textContent = symLabel + d.name;
+                selectEl.appendChild(opt);
+            }});
+
+            function syncToStreamlitInput() {{
+                const jsonStr = JSON.stringify(hotspots);
+                const parentDoc = window.parent.document;
+                const container = parentDoc.querySelector('.' + bridgeKeyClass);
+                if (!container) return;
+                const inputEl = container.querySelector('input, textarea');
+                if (!inputEl) return;
+
+                const proto = inputEl.tagName === 'TEXTAREA'
+                    ? window.parent.HTMLTextAreaElement.prototype
+                    : window.parent.HTMLInputElement.prototype;
+                const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+                nativeSetter.call(inputEl, jsonStr);
+                inputEl.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                inputEl.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                inputEl.dispatchEvent(new KeyboardEvent('keydown', {{
+                    key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
+                }}));
+                inputEl.blur();
+            }}
+
+            function renderBoxes() {{
+                boxesLayer.innerHTML = '';
+                hotspots.forEach((hs, index) => {{
+                    const box = document.createElement('div');
+                    box.className = 'drawn-box';
+                    box.style.left = hs.x + '%';
+                    box.style.top = hs.y + '%';
+                    box.style.width = hs.w + '%';
+                    box.style.height = hs.h + '%';
+
+                    const label = document.createElement('div');
+                    label.className = 'drawn-box-label';
+                    const tagText = hs.symbol ? (hs.symbol + ' (' + hs.name + ')') : hs.name;
+                    label.innerHTML = '<span>' + tagText + '</span>';
+
+                    const delBtn = document.createElement('span');
+                    delBtn.className = 'del-hs-btn';
+                    delBtn.textContent = '✕';
+                    delBtn.title = 'Xóa vùng này';
+                    delBtn.addEventListener('mousedown', (ev) => {{ ev.stopPropagation(); }});
+                    delBtn.addEventListener('click', (ev) => {{
+                        ev.stopPropagation();
+                        hotspots.splice(index, 1);
+                        renderBoxes();
+                        syncToStreamlitInput();
+                    }});
+
+                    label.appendChild(delBtn);
+                    box.appendChild(label);
+                    boxesLayer.appendChild(box);
+                }});
+                countInfo.textContent = "Đã khoanh " + hotspots.length + " vùng ký hiệu trên sơ đồ.";
+            }}
+
+            let isDrawing = false;
+            let startX = 0;
+            let startY = 0;
+
+            stageEl.addEventListener('mousedown', (e) => {{
+                if (e.button !== 0) return;
+                const rect = stageEl.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) return;
+                isDrawing = true;
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+                rubberBand.style.left = startX + 'px';
+                rubberBand.style.top = startY + 'px';
+                rubberBand.style.width = '0px';
+                rubberBand.style.height = '0px';
+                rubberBand.style.display = 'block';
+            }});
+
+            window.addEventListener('mousemove', (e) => {{
+                if (!isDrawing) return;
+                const rect = stageEl.getBoundingClientRect();
+                let curX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                let curY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+                const left = Math.min(startX, curX);
+                const top = Math.min(startY, curY);
+                const width = Math.abs(curX - startX);
+                const height = Math.abs(curY - startY);
+                rubberBand.style.left = left + 'px';
+                rubberBand.style.top = top + 'px';
+                rubberBand.style.width = width + 'px';
+                rubberBand.style.height = height + 'px';
+            }});
+
+            window.addEventListener('mouseup', (e) => {{
+                if (!isDrawing) return;
+                isDrawing = false;
+                rubberBand.style.display = 'none';
+
+                const rect = stageEl.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) return;
+                let curX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                let curY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+                const leftPx = Math.min(startX, curX);
+                const topPx = Math.min(startY, curY);
+                const widthPx = Math.abs(curX - startX);
+                const heightPx = Math.abs(curY - startY);
+
+                // Bỏ qua nếu vùng kéo quá nhỏ (< 8px)
+                if (widthPx < 8 || heightPx < 8) return;
+
+                const selectedDevId = selectEl.value;
+                const devObj = devices.find(d => d.device_id === selectedDevId) || devices[0];
+
+                const xPct = Math.round((leftPx / rect.width) * 10000) / 100;
+                const yPct = Math.round((topPx / rect.height) * 10000) / 100;
+                const wPct = Math.round((widthPx / rect.width) * 10000) / 100;
+                const hPct = Math.round((heightPx / rect.height) * 10000) / 100;
+
+                hotspots.push({{
+                    hotspot_id: 'hs-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    device_id: devObj.device_id,
+                    symbol: devObj.symbol || '',
+                    name: devObj.name || 'Thiết bị',
+                    x: xPct,
+                    y: yPct,
+                    w: wPct,
+                    h: hPct
+                }});
+
+                renderBoxes();
+                syncToStreamlitInput();
+            }});
+
+            document.getElementById('undo-btn').addEventListener('click', () => {{
+                if (hotspots.length > 0) {{
+                    hotspots.pop();
+                    renderBoxes();
+                    syncToStreamlitInput();
+                }}
+            }});
+
+            document.getElementById('clear-btn').addEventListener('click', () => {{
+                hotspots = [];
+                renderBoxes();
+                syncToStreamlitInput();
+            }});
+
+            document.getElementById('apply-save-btn').addEventListener('click', () => {{
+                syncToStreamlitInput();
+                setTimeout(() => {{
+                    const parentDoc = window.parent.document;
+                    const saveContainer = parentDoc.querySelector('.' + saveBtnKeyClass);
+                    if (saveContainer) {{
+                        const btn = saveContainer.querySelector('button');
+                        if (btn) btn.click();
+                    }}
+                }}, 150);
+            }});
+
+            renderBoxes();
+        </script>
+    </body>
+    </html>
+    """
+    components.html(editor_html, height=485, scrolling=False)
+
+    # Cầu nối dữ liệu JSON tọa độ giữa JS Canvas và Streamlit
+    raw_hs_json = st.text_input(
+        "Dữ liệu tọa độ vùng đánh dấu (Tự động đồng bộ khi kéo chuột)",
+        value=initial_hotspots_json,
+        key=bridge_key,
+        help="Tọa độ các vùng khoanh ký hiệu được tự động cập nhật vào ô này khi bạn kéo chuột trên ảnh."
+    )
+
+    if st.button(
+        "💾 Lưu vùng khoanh ký hiệu (Save Hotspots)",
+        key=save_btn_key,
+        type="primary",
+        use_container_width=True
+    ):
+        try:
+            parsed_hs = json.loads(raw_hs_json) if raw_hs_json.strip() else []
+            if not isinstance(parsed_hs, list):
+                st.error("Dữ liệu vùng đánh dấu không hợp lệ!")
+            else:
+                sync_model_diagram_and_hotspots(model_id, hotspots=parsed_hs)
+                st.toast(f"Đã lưu {len(parsed_hs)} vùng đánh dấu ký hiệu thành công!", icon="🎯")
+                try:
+                    st.rerun(scope="app")
+                except TypeError:
+                    st.rerun()
+        except json.JSONDecodeError:
+            st.error("Lỗi định dạng JSON tọa độ vùng đánh dấu!")
+
+
+@st.dialog("🎯 Visual Hotspot Editor — Tải ảnh & Khoanh vùng Ký hiệu", width="large")
+def open_hotspot_editor_modal(model: dict):
+    """Hộp thoại chuyên biệt để tải ảnh sơ đồ mô hình và kéo chuột khoanh vùng ký hiệu bằng tay."""
+    latest_model = next((m for m in st.session_state.models_data if m["id"] == model["id"]), model)
+    st.subheader(f"📐 {latest_model['title']} (`{latest_model.get('symbol', 'N/A')}`)")
+    render_visual_hotspot_editor_widget(latest_model, context_key="standalone_modal")
+
+
 # ==========================================
 # 5. DIALOGS (MODALS): TƯƠNG TÁC MÔ HÌNH & FORM CRUD
 # ==========================================
 @st.dialog("🔍 Sơ đồ Mô hình & Ký hiệu Thiết bị", width="large")
 def open_model_modal(model: dict):
     """
-    Modal hiển thị mô hình với bản vẽ kỹ thuật SVG và các 'Ký hiệu thiết bị' tương tác:
+    Modal hiển thị mô hình với bản vẽ kỹ thuật SVG (Hình 1.1, Hình 1.2), sơ đồ khoanh vùng tùy chỉnh
+    và các 'Ký hiệu thiết bị' tương tác:
     - Di chuột (hover) vào ký hiệu trên bản vẽ hoặc nút: Xem tên thiết bị.
     - Nhấn chuột trái vào ký hiệu trên bản vẽ hoặc nút: Chuyển ngay sang trang chi tiết của thiết bị.
     - Các khái niệm không có ký hiệu (như Vòng) hiển thị ở mục Khái niệm bên dưới.
@@ -755,9 +1692,11 @@ def open_model_modal(model: dict):
         except TypeError:
             st.rerun()
 
-    st.subheader(f"📐 {model['title']} (`{model.get('symbol', 'N/A')}`)")
-    st.caption(f"Phân loại: {model['category']} | Trạng thái: {model['status']}")
-    st.markdown(f"**Khái niệm mô hình:** {model.get('concept', '')}")
+    latest_model = next((m for m in st.session_state.models_data if m["id"] == model["id"]), model)
+
+    st.subheader(f"📐 {latest_model['title']} (`{latest_model.get('symbol', 'N/A')}`)")
+    st.caption(f"Phân loại: {latest_model['category']} | Trạng thái: {latest_model['status']}")
+    st.markdown(f"**Khái niệm mô hình:** {latest_model.get('concept', '')}")
     st.divider()
 
     st.markdown(
@@ -765,7 +1704,7 @@ def open_model_modal(model: dict):
         "để xem tên thiết bị. **Nhấn chuột trái** vào ký hiệu để chuyển sang trang nội dung chi tiết.*"
     )
 
-    devices = model.get("devices", [])
+    devices = latest_model.get("devices", [])
     if not devices:
         st.info("Mô hình này chưa có thiết bị nào.")
         return
@@ -773,9 +1712,14 @@ def open_model_modal(model: dict):
     symbol_devices = [d for d in devices if d.get("symbol", "").strip()]
     non_symbol_devices = [d for d in devices if not d.get("symbol", "").strip()]
 
-    # 1. Hiển thị bản vẽ kỹ thuật SVG có nhúng điểm tương tác trực tiếp (Hotspots)
-    if model.get("diagram_type") in ("fig_1_1", "fig_1_2"):
-        render_interactive_svg_diagram(model)
+    # 1. Hiển thị bản vẽ kỹ thuật SVG gốc (Giữ nguyên 100% Hình 1.1 & Hình 1.2)
+    if latest_model.get("diagram_type") in ("fig_1_1", "fig_1_2"):
+        render_interactive_svg_diagram(latest_model)
+
+    # 1b. Hiển thị ảnh sơ đồ tùy chỉnh có khoanh vùng Hotspot (nếu người dùng đã tải lên cho mô hình)
+    if latest_model.get("diagram_image", "").strip():
+        st.markdown("##### 🖼️ Sơ đồ Mô hình Tùy chỉnh (Tương tác qua vùng đã khoanh)")
+        render_custom_image_diagram(latest_model)
 
     # 2. Hiển thị hàng nút Ký hiệu thiết bị có gắn on_click callback đảm bảo nhảy trang 100%
     if symbol_devices:
@@ -786,10 +1730,10 @@ def open_model_modal(model: dict):
                 with cols[idx]:
                     if st.button(
                         f"🔣 {dev['symbol']}",
-                        key=f"modal_sym_{model['id']}_{dev['device_id']}",
+                        key=f"modal_sym_{latest_model['id']}_{dev['device_id']}",
                         help=f"Tên thiết bị: {dev['name']} (Nhấn chuột trái để xem chi tiết)",
                         on_click=navigate_to_device_detail,
-                        args=(model["id"], dev),
+                        args=(latest_model["id"], dev),
                         use_container_width=True,
                         type="primary"
                     ):
@@ -811,10 +1755,10 @@ def open_model_modal(model: dict):
                 with col_act:
                     if st.button(
                         "📄 Xem chi tiết",
-                        key=f"modal_nosym_{model['id']}_{dev['device_id']}",
+                        key=f"modal_nosym_{latest_model['id']}_{dev['device_id']}",
                         help=f"Xem trang chi tiết: {dev['name']}",
                         on_click=navigate_to_device_detail,
-                        args=(model["id"], dev),
+                        args=(latest_model["id"], dev),
                         use_container_width=True
                     ):
                         try:
@@ -822,11 +1766,16 @@ def open_model_modal(model: dict):
                         except TypeError:
                             st.rerun()
 
+    # 4. Tích hợp công cụ Visual Hotspot Editor ngay trong Modal để tiện chỉnh sửa trực tiếp
+    with st.expander("🎯 Công cụ tải ảnh sơ đồ & Kéo chuột khoanh vùng ký hiệu bằng tay (Visual Hotspot Editor)", expanded=False):
+        render_visual_hotspot_editor_widget(latest_model, context_key="in_model_modal")
+
 
 @st.dialog("📝 Thêm / Chỉnh sửa Mô hình ĐĐT", width="large")
 def open_crud_modal(edit_model: dict = None):
     """
     Dialog Form Thêm/Sửa Mô hình với kiểm tra dữ liệu (Validation) chặt chẽ bằng st.error.
+    Hỗ trợ đính kèm ảnh sơ đồ mô hình ngay khi tạo/sửa.
     """
     is_edit = edit_model is not None
     default_title = edit_model["title"] if is_edit else ""
@@ -863,6 +1812,21 @@ def open_crud_modal(edit_model: dict = None):
             placeholder="Mô tả khái niệm và nguyên lý hoạt động tổng quát của mô hình..."
         )
 
+        st.markdown("**Ảnh sơ đồ mô hình tùy chỉnh (Tùy chọn - dùng để khoanh vùng ký hiệu bằng tay)**")
+        diag_col1, diag_col2 = st.columns([1.3, 1])
+        with diag_col1:
+            uploaded_diagram_file = st.file_uploader(
+                "Tải ảnh sơ đồ (.png, .jpg, .jpeg, .webp)",
+                type=["png", "jpg", "jpeg", "webp"]
+            )
+        with diag_col2:
+            existing_url = (
+                edit_model.get("diagram_image", "")
+                if (is_edit and edit_model.get("diagram_image", "").startswith("http"))
+                else ""
+            )
+            diagram_image_url = st.text_input("Hoặc nhập URL ảnh sơ đồ", value=existing_url)
+
         st.markdown("**Danh sách Thiết bị / Khái niệm trên mô hình (*)**")
         st.caption(
             "Mỗi dòng 1 mục theo cú pháp: `Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết` "
@@ -892,6 +1856,15 @@ def open_crud_modal(edit_model: dict = None):
                 st.error(f"Lỗi dữ liệu thiết bị: {err_msg}")
                 return
 
+            # Xử lý ảnh sơ đồ nếu người dùng tải lên hoặc nhập URL
+            final_diagram_image = edit_model.get("diagram_image", "") if is_edit else ""
+            if uploaded_diagram_file is not None:
+                mime_type = uploaded_diagram_file.type or "image/png"
+                b64_diag = base64.b64encode(uploaded_diagram_file.getvalue()).decode("utf-8")
+                final_diagram_image = f"data:{mime_type};base64,{b64_diag}"
+            elif diagram_image_url.strip():
+                final_diagram_image = diagram_image_url.strip()
+
             if is_edit:
                 for item in st.session_state.models_data:
                     if item["id"] == edit_model["id"]:
@@ -901,6 +1874,8 @@ def open_crud_modal(edit_model: dict = None):
                         item["status"] = status
                         item["concept"] = concept.strip()
                         item["devices"] = parsed_devices
+                        item["diagram_image"] = final_diagram_image
+                        item.setdefault("hotspots", [])
                         break
                 save_data(st.session_state.models_data)
                 st.toast("Đã cập nhật mô hình thành công!", icon="✅")
@@ -912,6 +1887,8 @@ def open_crud_modal(edit_model: dict = None):
                     "created_at": datetime.now().isoformat(),
                     "status": status,
                     "symbol": symbol.strip(),
+                    "diagram_image": final_diagram_image,
+                    "hotspots": [],
                     "concept": concept.strip(),
                     "devices": parsed_devices
                 }
@@ -991,7 +1968,7 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
                 st.markdown(f"**Thiết bị & Khái niệm ({len(devices)}):** {device_tags if device_tags else 'Chưa có'}")
 
                 st.divider()
-                btn_col1, btn_col2, btn_col3 = st.columns([2, 1, 1])
+                btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1.8, 1.3, 0.9, 0.9])
                 with btn_col1:
                     if st.button(
                         "🔍 Mở Thẻ Mô hình",
@@ -1001,9 +1978,17 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
                     ):
                         open_model_modal(model)
                 with btn_col2:
+                    if st.button(
+                        "🎯 Khoanh vùng",
+                        key=f"hotspot_{model['id']}",
+                        help="Tải ảnh sơ đồ & kéo chuột khoanh vùng đánh dấu ký hiệu bằng tay",
+                        use_container_width=True
+                    ):
+                        open_hotspot_editor_modal(model)
+                with btn_col3:
                     if st.button("✏️ Sửa", key=f"edit_{model['id']}", use_container_width=True):
                         open_crud_modal(model)
-                with btn_col3:
+                with btn_col4:
                     if st.button("🗑️ Xóa", key=f"del_{model['id']}", use_container_width=True):
                         st.session_state.models_data = [
                             item for item in st.session_state.models_data if item["id"] != model["id"]
@@ -1177,10 +2162,83 @@ def render_device_detail_page():
 
 
 # ==========================================
-# 8. ĐIỀU HƯỚNG & BỐ CỤC CHÍNH (MAIN LAYOUT)
+# 8. ĐIỀU HƯỚNG, ĐỒNG BỘ GITHUB, SAO LƯU JSON & BỐ CỤC CHÍNH
 # ==========================================
+def render_sidebar_export_import() -> None:
+    """Hiển thị trạng thái đồng bộ GitHub Cloud và công cụ Xuất (Export) / Nhập (Import) data.json trên Sidebar."""
+    st.subheader("☁️ Đồng bộ Đám mây (GitHub)")
+    gh_cfg = get_github_config()
+
+    if gh_cfg["enabled"]:
+        st.caption(f"🟢 **GitHub Auto-Sync:** `{gh_cfg['repo']}` (`{gh_cfg['branch']}`)")
+        if st.button("🔄 Tải dữ liệu mới nhất từ GitHub", use_container_width=True):
+            pulled = github_pull_data()
+            if isinstance(pulled, list):
+                st.session_state.models_data = _normalize_loaded_models(pulled)
+                st.toast("Đã đồng bộ dữ liệu mới nhất từ GitHub!", icon="☁️")
+                st.rerun()
+            else:
+                st.error("Không thể tải dữ liệu từ GitHub. Vui lòng kiểm tra Token hoặc tên Repo.")
+    else:
+        st.caption("⚪ **Trạng thái:** Lưu nội bộ (`data.json`)")
+        with st.expander("⚙️ Kết nối GitHub Auto-Sync", expanded=False):
+            st.caption("Nhập thông tin dưới đây hoặc cấu hình trong `st.secrets` trên Streamlit Cloud:")
+            in_repo = st.text_input("GitHub Repo (VD: ten-ban/model-ddt)", key="ui_gh_repo")
+            in_token = st.text_input("GitHub Personal Access Token", type="password", key="ui_gh_token")
+            in_branch = st.text_input("Nhánh (Branch)", value="main", key="ui_gh_branch")
+            if st.button("🔗 Kết nối & Đồng bộ ngay", type="primary", use_container_width=True):
+                if in_repo.strip() and in_token.strip():
+                    st.session_state.custom_github_config = {
+                        "repo": in_repo.strip(),
+                        "token": in_token.strip(),
+                        "branch": in_branch.strip() or "main"
+                    }
+                    ok, msg = github_push_data(st.session_state.models_data, "Initial sync from Model DDT")
+                    if ok:
+                        st.toast("Đã kết nối và đẩy dữ liệu lên GitHub thành công!", icon="✅")
+                        st.rerun()
+                    else:
+                        st.error(f"Kết nối thất bại: {msg}")
+                else:
+                    st.error("Vui lòng nhập đủ GitHub Repo và Token!")
+
+    st.divider()
+    st.subheader("📦 Sao lưu & Chia sẻ (JSON)")
+
+    json_bytes = json.dumps(st.session_state.models_data, ensure_ascii=False, indent=2).encode("utf-8")
+    st.download_button(
+        label="📤 Xuất (Export) data.json",
+        data=json_bytes,
+        file_name="data.json",
+        mime="application/json",
+        use_container_width=True,
+        help="Tải toàn bộ dữ liệu mô hình, vùng khoanh ký hiệu và hình ảnh thực tế về máy dưới dạng file data.json"
+    )
+
+    uploaded_json = st.file_uploader(
+        "📥 Nhập (Import) file data.json",
+        type=["json"],
+        key="sidebar_import_json_uploader",
+        help="Chọn file data.json từ máy tính để khôi phục hoặc nạp bộ dữ liệu học phần mới"
+    )
+    if uploaded_json is not None:
+        if st.button("🔄 Nạp dữ liệu từ file JSON", type="primary", use_container_width=True):
+            try:
+                raw_content = json.loads(uploaded_json.getvalue().decode("utf-8"))
+                normalized_data, err_msg = validate_and_normalize_models_json(raw_content)
+                if err_msg:
+                    st.error(f"Lỗi cấu trúc JSON: {err_msg}")
+                else:
+                    st.session_state.models_data = normalized_data
+                    save_data(normalized_data)
+                    st.toast(f"Đã nhập thành công {len(normalized_data)} mô hình từ file data.json!", icon="📥")
+                    st.rerun()
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                st.error("Lỗi: File tải lên không phải là định dạng JSON hợp lệ!")
+
+
 def main():
-    # Sidebar: Bộ lọc và Tìm kiếm theo [Tên, Khái niệm, Ký hiệu]
+    # Sidebar: Bộ lọc và Tìm kiếm theo [Tên, Khái niệm, Ký hiệu] + GitHub Sync & Export/Import data.json
     with st.sidebar:
         st.header("🎛️ Công cụ & Bộ lọc ĐĐT")
         if st.button("➕ Tạo Mô hình mới", type="primary", use_container_width=True):
@@ -1192,6 +2250,9 @@ def main():
         search_concept = st.text_input("Tìm theo Khái niệm", placeholder="VD: mạch kín, giao điểm, điện năng...")
         search_symbol = st.text_input("Tìm theo Ký hiệu", placeholder="VD: E1, R1, Nút A, Dây dẫn...")
         status_filter = st.selectbox("Lọc theo Trạng thái", options=["Tất cả", "completed", "pending"])
+
+        st.divider()
+        render_sidebar_export_import()
 
         st.divider()
         st.caption(f"Tổng số mô hình hiện có: **{len(st.session_state.models_data)}**")
@@ -1208,7 +2269,7 @@ def main():
                     <h1 style="margin:6px 0 4px 0; font-size:28px;">Model ĐĐT — Kỹ thuật Điện - Điện tử</h1>
                     <span style="color:#94a3b8; font-size:14.5px;">
                         Chọn <b>Thẻ mô hình</b> để mở bản vẽ kỹ thuật tương tác (<b>Hình 1.1</b> & <b>Hình 1.2</b>),
-                        <b>di chuột</b> vào từng ký hiệu để xem tên thiết bị và <b>nhấn chuột trái</b> để mở trang chi tiết & hình ảnh thực tế.
+                        hoặc dùng <b>🎯 Khoanh vùng</b> để tải ảnh sơ đồ mới và kéo chuột đánh dấu ký hiệu bằng tay.
                     </span>
                 </div>
             </div>
