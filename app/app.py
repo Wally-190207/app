@@ -1,4 +1,5 @@
 import base64
+import importlib
 import json
 import os
 import subprocess
@@ -9,19 +10,48 @@ import urllib.request
 import uuid
 from datetime import datetime
 
+
 # ==========================================
-# 0. BOOTSTRAPPER: TỰ ĐỘNG CÀI ĐẶT STREAMLIT & KHỞI CHẠY SERVER
+# 0. BOOTSTRAPPER: TỰ ĐỘNG KIỂM TRA, SỬA LỖI & KHỞI CHẠY STREAMLIT
 # ==========================================
 def _ensure_streamlit_installed() -> None:
     """
-    Kiểm tra và tự động cài đặt thư viện streamlit vào đúng Python Interpreter (sys.executable)
-    đang chạy (khắc phục triệt để lỗi ModuleNotFoundError trong Visual Studio / VS Code).
+    Kiểm tra toàn diện thư viện streamlit (bao gồm cả streamlit.__main__ và streamlit.web.cli).
+    Tự động xử lý thư mục trùng tên hoặc cài đặt lại (--force-reinstall) nếu gói streamlit bị hỏng/thiếu __main__.
     """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 1. Xử lý nếu trong thư mục dự án vô tình có thư mục rỗng tên 'streamlit' gây xung đột (Shadowing)
+    shadow_dir = os.path.join(script_dir, "streamlit")
+    if os.path.isdir(shadow_dir) and not os.path.exists(os.path.join(shadow_dir, "__main__.py")):
+        backup_dir = os.path.join(script_dir, "_streamlit_folder_backup")
+        try:
+            os.rename(shadow_dir, backup_dir)
+            print(f"⚠️ Đã đổi tên thư mục trùng '{shadow_dir}' -> '{backup_dir}' để tránh xung đột.")
+        except Exception:
+            pass
+
+    # 2. Kiểm tra xem streamlit và streamlit.__main__ có thực sự hoạt động không
+    needs_reinstall = False
     try:
-        import streamlit  # noqa: F401
-    except ModuleNotFoundError:
-        print("⚠️ Phát hiện môi trường Python hiện tại chưa có thư viện 'streamlit'.")
-        print(f"🔧 Đang tự động cài đặt 'streamlit' vào: {sys.executable} ...")
+        import streamlit as _st
+        import streamlit.__main__  # noqa: F401
+        from streamlit.web import cli as _stcli  # noqa: F401
+        if not hasattr(_st, "runtime") or not hasattr(_st, "set_page_config"):
+            needs_reinstall = True
+    except Exception:
+        needs_reinstall = True
+
+    if needs_reinstall:
+        print("⚠️ Phát hiện gói 'streamlit' chưa được cài đặt hoặc bị thiếu file thực thi (__main__).")
+        print(f"🔧 Đang tự động cài đặt/sửa lỗi 'streamlit' vào: {sys.executable} ...")
+        print("⏳ Quá trình này mất khoảng 30-60 giây, vui lòng đợi...")
+
+        # Xóa cache module bị lỗi khỏi bộ nhớ
+        for mod_name in list(sys.modules.keys()):
+            if mod_name == "streamlit" or mod_name.startswith("streamlit."):
+                del sys.modules[mod_name]
+
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
         except Exception:
@@ -30,8 +60,12 @@ def _ensure_streamlit_installed() -> None:
                 ensurepip.bootstrap()
             except Exception:
                 pass
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit"])
-        print("✅ Đã cài đặt 'streamlit' thành công!")
+
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", "--upgrade", "--force-reinstall", "streamlit"
+        ])
+        importlib.invalidate_caches()
+        print("✅ Đã cài đặt hoàn chỉnh 'streamlit' thành công!")
 
 
 _ensure_streamlit_installed()
@@ -39,7 +73,7 @@ _ensure_streamlit_installed()
 import streamlit as st  # noqa: E402
 import streamlit.components.v1 as components  # noqa: E402
 
-# Tự động khởi chạy Streamlit Server nếu người dùng nhấn nút Run (python app.py) trực tiếp trong VS / VS Code
+# Tự động khởi chạy Streamlit Server nếu người dùng nhấn nút Run trực tiếp trong Visual Studio / VS Code
 if __name__ == "__main__":
     try:
         is_running_in_streamlit = st.runtime.exists()
@@ -365,30 +399,36 @@ DEFAULT_DATA = [
 ]
 
 
+def _has_streamlit_secrets_file() -> bool:
+    """Kiểm tra an toàn xem file secrets.toml có tồn tại hay không trước khi truy cập st.secrets."""
+    local_secret = os.path.join(BASE_DIR, ".streamlit", "secrets.toml")
+    user_secret = os.path.expanduser(os.path.join("~", ".streamlit", "secrets.toml"))
+    return os.path.exists(local_secret) or os.path.exists(user_secret)
+
+
 def get_github_config() -> dict:
     """
-    Lấy cấu hình kết nối GitHub API từ session_state (nếu nhập trực tiếp), st.secrets (trên Streamlit Cloud)
-    hoặc biến môi trường (os.environ).
+    Lấy cấu hình kết nối GitHub API từ session_state (nếu nhập trên giao diện),
+    st.secrets (nếu có file secrets.toml trên Streamlit Cloud) hoặc biến môi trường (os.environ).
     """
     token = ""
     repo = ""
     branch = "main"
     file_path = "data.json"
 
-    # 1. Đọc từ st.secrets (Streamlit Cloud)
-    try:
-        if "GITHUB_TOKEN" in st.secrets:
-            token = str(st.secrets["GITHUB_TOKEN"]).strip()
-        if "GITHUB_REPO" in st.secrets:
-            repo = str(st.secrets["GITHUB_REPO"]).strip()
-        if "GITHUB_BRANCH" in st.secrets:
-            branch = str(st.secrets["GITHUB_BRANCH"]).strip() or "main"
-        if "GITHUB_FILE_PATH" in st.secrets:
-            file_path = str(st.secrets["GITHUB_FILE_PATH"]).strip() or "data.json"
-    except Exception:
-        pass
+    if _has_streamlit_secrets_file():
+        try:
+            if "GITHUB_TOKEN" in st.secrets:
+                token = str(st.secrets["GITHUB_TOKEN"]).strip()
+            if "GITHUB_REPO" in st.secrets:
+                repo = str(st.secrets["GITHUB_REPO"]).strip()
+            if "GITHUB_BRANCH" in st.secrets:
+                branch = str(st.secrets["GITHUB_BRANCH"]).strip() or "main"
+            if "GITHUB_FILE_PATH" in st.secrets:
+                file_path = str(st.secrets["GITHUB_FILE_PATH"]).strip() or "data.json"
+        except Exception:
+            pass
 
-    # 2. Dự phòng đọc từ biến môi trường hệ thống
     if not token:
         token = os.environ.get("GITHUB_TOKEN", "").strip()
     if not repo:
@@ -396,15 +436,16 @@ def get_github_config() -> dict:
     if os.environ.get("GITHUB_BRANCH"):
         branch = os.environ.get("GITHUB_BRANCH", "main").strip()
 
-    # 3. Ưu tiên cấu hình tạm thời nếu người dùng nhập trực tiếp trên Sidebar
-    if "custom_github_config" in st.session_state:
-        custom_cfg = st.session_state.custom_github_config
-        if custom_cfg.get("token") and custom_cfg.get("repo"):
-            token = custom_cfg["token"].strip()
-            repo = custom_cfg["repo"].strip()
-            branch = custom_cfg.get("branch", "main").strip() or "main"
+    try:
+        if "custom_github_config" in st.session_state:
+            custom_cfg = st.session_state.custom_github_config
+            if custom_cfg.get("token") and custom_cfg.get("repo"):
+                token = custom_cfg["token"].strip()
+                repo = custom_cfg["repo"].strip()
+                branch = custom_cfg.get("branch", "main").strip() or "main"
+    except Exception:
+        pass
 
-    # Chuẩn hóa định dạng repo (loại bỏ https://github.com/ nếu người dùng dán nguyên link)
     repo = repo.replace("https://github.com/", "").replace("http://github.com/", "").strip("/")
     if repo.endswith(".git"):
         repo = repo[:-4]
@@ -418,7 +459,7 @@ def get_github_config() -> dict:
     }
 
 
-def github_pull_data() -> list | None:
+def github_pull_data():
     """Tải nội dung file data.json trực tiếp từ kho chứa GitHub thông qua GitHub REST API."""
     cfg = get_github_config()
     if not cfg["enabled"]:
@@ -449,7 +490,7 @@ def github_pull_data() -> list | None:
     return None
 
 
-def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Model DDT Web App") -> tuple[bool, str]:
+def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Model DDT Web App") -> tuple:
     """Đẩy (Commit & Push) toàn bộ dữ liệu data.json mới nhất thẳng lên GitHub thông qua GitHub REST API."""
     cfg = get_github_config()
     if not cfg["enabled"]:
@@ -463,7 +504,6 @@ def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Mod
         "User-Agent": "Model-DDT-Streamlit-App"
     }
 
-    # Bước 1: Lấy mã SHA hiện tại của file data.json trên nhánh GitHub (nếu file đã tồn tại)
     current_sha = None
     get_url = f"{base_url}?ref={urllib.parse.quote(cfg['branch'])}"
     get_req = urllib.request.Request(get_url, headers=headers, method="GET")
@@ -477,7 +517,6 @@ def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Mod
     except Exception as e:
         return False, f"Lỗi kết nối GitHub: {e}"
 
-    # Bước 2: Mã hóa Base64 và gửi lệnh PUT để cập nhật file trên GitHub
     raw_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
     b64_content = base64.b64encode(raw_bytes).decode("utf-8")
 
@@ -528,7 +567,6 @@ def load_data() -> list:
     Đọc dữ liệu từ GitHub (nếu đã cấu hình Auto-Sync) hoặc từ file data.json nội bộ.
     Đảm bảo tương thích trường real_images, diagram_image và hotspots.
     """
-    # 1. Ưu tiên kéo dữ liệu mới nhất từ GitHub nếu đã cấu hình
     remote_data = github_pull_data()
     if isinstance(remote_data, list) and remote_data:
         normalized_remote = _normalize_loaded_models(remote_data)
@@ -539,7 +577,6 @@ def load_data() -> list:
             pass
         return normalized_remote
 
-    # 2. Đọc từ file data.json nội bộ nếu chưa cấu hình GitHub hoặc kho chưa có file
     if not os.path.exists(DATA_FILE):
         save_data(DEFAULT_DATA)
         return DEFAULT_DATA
@@ -570,7 +607,7 @@ def save_data(data: list) -> None:
     if cfg["enabled"]:
         ok, err_msg = github_push_data(data)
         if not ok:
-            st.warning(f"⚠️ Đã lưu tạm thời nhưng chưa thể đồng bộ lên GitHub: {err_msg}")
+            st.warning(f"⚠️ Đã lưu nội bộ nhưng chưa thể đồng bộ lên GitHub: {err_msg}")
 
 
 def init_session_state() -> None:
@@ -601,7 +638,7 @@ def navigate_to_device_detail(model_id: str, dev: dict) -> None:
 # ==========================================
 # 3. VALIDATION & CRUD HELPERS
 # ==========================================
-def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple[list, str]:
+def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple:
     """
     Phân tích chuỗi nhập thiết bị theo định dạng mỗi dòng:
     Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết
@@ -634,7 +671,6 @@ def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple[li
             )
         normalized_symbol = "" if raw_symbol == "-" else raw_symbol
 
-        # Khôi phục device_id và real_images nếu thiết bị đã tồn tại trước đó
         matched_old = (
             existing_by_key.get((normalized_symbol, name))
             or existing_by_key.get(name)
@@ -662,7 +698,7 @@ def format_devices_to_text(devices: list) -> str:
     )
 
 
-def validate_and_normalize_models_json(raw_data: list) -> tuple[list, str]:
+def validate_and_normalize_models_json(raw_data: list) -> tuple:
     """Kiểm tra tính hợp lệ và chuẩn hóa danh sách mô hình khi Import từ file data.json."""
     if not isinstance(raw_data, list):
         return [], "Cấu trúc file JSON không hợp lệ (Dữ liệu gốc phải là một danh sách mảng `[...]`)."
@@ -922,14 +958,12 @@ def render_interactive_svg_diagram(model: dict) -> None:
                 const parentDoc = window.parent.document;
                 let btn = null;
 
-                // Tầng 1: Tìm theo class st-key của Streamlit
                 const keyClass = 'st-key-modal_sym_' + modelId + '_' + devId;
                 const keyContainer = parentDoc.querySelector('.' + keyClass);
                 if (keyContainer) {{
                     btn = keyContainer.querySelector('button');
                 }}
 
-                // Tầng 2: Tìm nút trong Dialog khớp chính xác nhãn ký hiệu "🔣 " + symText
                 if (!btn && symText) {{
                     const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
                     const allBtns = dialogScope.querySelectorAll('button');
@@ -942,7 +976,6 @@ def render_interactive_svg_diagram(model: dict) -> None:
                     }}
                 }}
 
-                // Tầng 3: Tìm theo thứ tự nút ký hiệu "🔣" trong Dialog
                 if (!btn && idx !== null && !isNaN(idx)) {{
                     const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
                     const symBtns = Array.from(dialogScope.querySelectorAll('button')).filter(
@@ -1133,7 +1166,6 @@ def render_custom_image_diagram(model: dict) -> None:
                 const parentDoc = window.parent.document;
                 let btn = null;
 
-                // Tầng 1: Tìm theo key nút có ký hiệu hoặc nút không ký hiệu
                 const symKey = 'st-key-modal_sym_' + modelId + '_' + devId;
                 const noSymKey = 'st-key-modal_nosym_' + modelId + '_' + devId;
                 const keyContainer = parentDoc.querySelector('.' + symKey) || parentDoc.querySelector('.' + noSymKey);
@@ -1141,7 +1173,6 @@ def render_custom_image_diagram(model: dict) -> None:
                     btn = keyContainer.querySelector('button');
                 }}
 
-                // Tầng 2: Tìm theo nhãn văn bản ký hiệu
                 if (!btn && symText) {{
                     const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
                     const allBtns = dialogScope.querySelectorAll('button');
@@ -1154,7 +1185,6 @@ def render_custom_image_diagram(model: dict) -> None:
                     }}
                 }}
 
-                // Tầng 3: Tìm theo thứ tự nút ký hiệu
                 if (!btn && idx !== null && !isNaN(idx) && idx >= 0) {{
                     const dialogScope = parentDoc.querySelector('[role="dialog"], [data-testid="stDialog"]') || parentDoc;
                     const symBtns = Array.from(dialogScope.querySelectorAll('button')).filter(
@@ -1225,7 +1255,6 @@ def render_visual_hotspot_editor_widget(model: dict, context_key: str = "editor"
     model_id = model["id"]
     devices = model.get("devices", [])
 
-    # 1. Khu vực tải lên hoặc cập nhật ảnh sơ đồ mô hình
     with st.container(border=True):
         st.markdown("##### 🖼️ Bước 1: Tải ảnh sơ đồ mô hình (hoặc dán URL ảnh)")
         up_col1, up_col2 = st.columns([1.4, 1])
@@ -1281,7 +1310,6 @@ def render_visual_hotspot_editor_widget(model: dict, context_key: str = "editor"
         st.warning("Mô hình này chưa có thiết bị nào. Vui lòng thêm thiết bị vào mô hình trước khi khoanh vùng ký hiệu.")
         return
 
-    # 2. Khu vực kéo chuột khoanh vùng ký hiệu trực tiếp trên ảnh
     st.markdown("##### 🎯 Bước 2: Chọn Thiết bị & Kéo chuột trái trên ảnh sơ đồ để khoanh vùng ký hiệu")
     st.caption(
         "Hướng dẫn: Chọn thiết bị ở thanh công cụ bên dưới ➡️ Nhấn giữ và kéo chuột trái trên ảnh để tạo vùng đánh dấu ➡️ "
@@ -1577,7 +1605,6 @@ def render_visual_hotspot_editor_widget(model: dict, context_key: str = "editor"
                 const widthPx = Math.abs(curX - startX);
                 const heightPx = Math.abs(curY - startY);
 
-                // Bỏ qua nếu vùng kéo quá nhỏ (< 8px)
                 if (widthPx < 8 || heightPx < 8) return;
 
                 const selectedDevId = selectEl.value;
@@ -1636,7 +1663,6 @@ def render_visual_hotspot_editor_widget(model: dict, context_key: str = "editor"
     """
     components.html(editor_html, height=485, scrolling=False)
 
-    # Cầu nối dữ liệu JSON tọa độ giữa JS Canvas và Streamlit
     raw_hs_json = st.text_input(
         "Dữ liệu tọa độ vùng đánh dấu (Tự động đồng bộ khi kéo chuột)",
         value=initial_hotspots_json,
@@ -1680,12 +1706,8 @@ def open_hotspot_editor_modal(model: dict):
 def open_model_modal(model: dict):
     """
     Modal hiển thị mô hình với bản vẽ kỹ thuật SVG (Hình 1.1, Hình 1.2), sơ đồ khoanh vùng tùy chỉnh
-    và các 'Ký hiệu thiết bị' tương tác:
-    - Di chuột (hover) vào ký hiệu trên bản vẽ hoặc nút: Xem tên thiết bị.
-    - Nhấn chuột trái vào ký hiệu trên bản vẽ hoặc nút: Chuyển ngay sang trang chi tiết của thiết bị.
-    - Các khái niệm không có ký hiệu (như Vòng) hiển thị ở mục Khái niệm bên dưới.
+    và các 'Ký hiệu thiết bị' tương tác.
     """
-    # Nếu callback chuyển trang đã được kích hoạt từ nút bên trong Dialog, thực hiện rerun toàn bộ ứng dụng ngay lập tức
     if st.session_state.current_view == "device_detail":
         try:
             st.rerun(scope="app")
@@ -1775,7 +1797,6 @@ def open_model_modal(model: dict):
 def open_crud_modal(edit_model: dict = None):
     """
     Dialog Form Thêm/Sửa Mô hình với kiểm tra dữ liệu (Validation) chặt chẽ bằng st.error.
-    Hỗ trợ đính kèm ảnh sơ đồ mô hình ngay khi tạo/sửa.
     """
     is_edit = edit_model is not None
     default_title = edit_model["title"] if is_edit else ""
@@ -1856,7 +1877,6 @@ def open_crud_modal(edit_model: dict = None):
                 st.error(f"Lỗi dữ liệu thiết bị: {err_msg}")
                 return
 
-            # Xử lý ảnh sơ đồ nếu người dùng tải lên hoặc nhập URL
             final_diagram_image = edit_model.get("diagram_image", "") if is_edit else ""
             if uploaded_diagram_file is not None:
                 mime_type = uploaded_diagram_file.type or "image/png"
@@ -1911,7 +1931,6 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
     Fragment hiển thị danh sách thẻ [Mô hình, Thiết bị] để tối ưu hóa hiệu năng,
     tránh tải lại toàn bộ trang khi thao tác trên danh sách.
     """
-    # Đồng bộ chuyển trang ngay nếu người dùng vừa chọn ký hiệu thiết bị trong Modal
     if st.session_state.current_view == "device_detail":
         try:
             st.rerun(scope="app")
@@ -1920,12 +1939,10 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
 
     models = st.session_state.models_data
 
-    # Empty State khi dữ liệu gốc trống
     if not models:
         st.info("Chưa có dữ liệu, hãy tạo mục đầu tiên", icon="ℹ️")
         return
 
-    # Lọc dữ liệu theo [Tên, Khái niệm, Ký hiệu] và trạng thái
     filtered_models = []
     for m in models:
         all_names = m.get("title", "") + " " + " ".join(d.get("name", "") for d in m.get("devices", []))
@@ -1944,7 +1961,6 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
         st.warning("Không tìm thấy Mô hình hoặc Thiết bị nào khớp với bộ lọc hiện tại.", icon="🔍")
         return
 
-    # Hiển thị dưới dạng lưới thẻ (2 cột) sử dụng st.columns và st.container(border=True)
     cols = st.columns(2)
     for idx, model in enumerate(filtered_models):
         with cols[idx % 2]:
@@ -1959,7 +1975,6 @@ def render_models_workspace(search_name: str, search_concept: str, search_symbol
                 st.markdown(f"**Ký hiệu mô hình:** `{model.get('symbol', 'N/A')}` | **Phân loại:** {model['category']}")
                 st.markdown(f"**Khái niệm:** {model.get('concept', '')}")
 
-                # Thông tin [Thiết bị] trực thuộc [Mô hình]
                 devices = model.get("devices", [])
                 device_tags = ", ".join([
                     f"`{d['symbol']}` ({d['name']})" if d.get("symbol") else f"*{d['name']} (không ký hiệu)*"
@@ -2026,7 +2041,6 @@ def render_device_detail_page():
     model_id = st.session_state.selected_model_id
     parent_model = next((m for m in st.session_state.models_data if m["id"] == model_id), None)
 
-    # Đồng bộ lại dev mới nhất từ parent_model
     if parent_model and dev:
         latest_dev = next((d for d in parent_model.get("devices", []) if d["device_id"] == dev.get("device_id")), None)
         if latest_dev:
@@ -2082,9 +2096,6 @@ def render_device_detail_page():
 
     st.divider()
 
-    # ==========================================
-    # PHẦN HÌNH ẢNH THỰC TẾ CỦA THIẾT BỊ KÈM CHÚ THÍCH
-    # ==========================================
     st.subheader("📸 Hình ảnh thực tế của thiết bị & Chú thích")
     img_col_gallery, img_col_form = st.columns([1.6, 1])
 
@@ -2238,7 +2249,6 @@ def render_sidebar_export_import() -> None:
 
 
 def main():
-    # Sidebar: Bộ lọc và Tìm kiếm theo [Tên, Khái niệm, Ký hiệu] + GitHub Sync & Export/Import data.json
     with st.sidebar:
         st.header("🎛️ Công cụ & Bộ lọc ĐĐT")
         if st.button("➕ Tạo Mô hình mới", type="primary", use_container_width=True):
@@ -2257,7 +2267,6 @@ def main():
         st.divider()
         st.caption(f"Tổng số mô hình hiện có: **{len(st.session_state.models_data)}**")
 
-    # Điều hướng giữa Màn hình chính và Trang chi tiết thiết bị
     if st.session_state.current_view == "device_detail":
         render_device_detail_page()
     else:
