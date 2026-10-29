@@ -684,51 +684,145 @@ def api_github_sync():
 
 
 # ==========================================
-# 4. GIAO DIỆN WEB TƯƠNG TÁC (TECH CIRCUIT UI + SVG HÌNH 1.1 & 1.2 + HOTSPOT EDITOR)
+# 4. GIAO DIỆN WEB TƯƠNG TÁC (TECH-BROWN ESPRESSO & CYBER AMBER DASHBOARD UI)
 # ==========================================
 HTML_TEMPLATE = r"""
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Model ĐĐT - Kỹ thuật Điện - Điện tử</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>Model ĐĐT — Kỹ thuật Điện - Điện tử</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #070d19;
-            --card-bg: rgba(15, 23, 42, 0.82);
-            --sidebar-bg: rgba(10, 18, 36, 0.96);
-            --cyan: #38bdf8;
-            --blue: #2563eb;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
+            --bg-espresso: #0f0905;
+            --bg-blueprint-warm: #160d07;
+            --bg-panel: #180f08;
+            --card-bg: rgba(26, 16, 9, 0.88);
+            --card-bg-hover: rgba(34, 21, 12, 0.94);
+            --sidebar-bg: #140c06;
+            --rail-bg: #0c0704;
+            --copper: #b45309;
+            --copper-bright: #d97706;
+            --copper-border: rgba(180, 83, 9, 0.42);
+            --copper-glow: rgba(245, 158, 11, 0.25);
+            --amber-cyber: #f59e0b;
+            --amber-light: #fbbf24;
+            --amber-pale: #fde68a;
+            --cream-sand: #f3e6d0;
+            --emerald-bg: rgba(6, 78, 59, 0.55);
+            --emerald-border: rgba(16, 185, 129, 0.45);
+            --emerald-text: #34d399;
+            --text-main: #f5ebe1;
+            --text-secondary: #d6c3b0;
+            --text-muted: #9c846e;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
         }
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* NỀN TECH-BROWN ESPRESSO (#0f0905) & HIỆU ỨNG LƯỚI ĐIỆN TỬ ẨN (CYBER GRID) */
         body {
             margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
+            font-family: var(--font-sans);
+            background-color: var(--bg-espresso);
             background-image:
-                radial-gradient(circle at 12% 18%, rgba(14, 165, 233, 0.16) 0%, transparent 32%),
-                radial-gradient(circle at 88% 82%, rgba(59, 130, 246, 0.15) 0%, transparent 35%),
-                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
-                linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
-                linear-gradient(rgba(56, 189, 248, 0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(56, 189, 248, 0.025) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 100% 100%, 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+                radial-gradient(circle at 22% 14%, rgba(245, 158, 11, 0.11) 0%, transparent 38%),
+                radial-gradient(circle at 82% 22%, rgba(180, 83, 9, 0.14) 0%, transparent 42%),
+                radial-gradient(circle at 50% 88%, rgba(180, 83, 9, 0.09) 0%, transparent 48%),
+                linear-gradient(rgba(245, 158, 11, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.045) 1px, transparent 1px),
+                linear-gradient(rgba(180, 83, 9, 0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(180, 83, 9, 0.022) 1px, transparent 1px),
+                linear-gradient(180deg, #0f0905 0%, #150c06 50%, #0d0804 100%);
+            background-size:
+                100% 100%, 100% 100%, 100% 100%,
+                80px 80px, 80px 80px,
+                16px 16px, 16px 16px,
+                100% 100%;
             background-attachment: fixed;
             color: var(--text-main);
             display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
         }
-        /* SIDEBAR */
+
+        /* THANH ICON RAIL DỌC BÊN TRÁI (THEO MẪU DASHBOARD) */
+        .icon-rail {
+            width: 56px;
+            min-width: 56px;
+            background: var(--rail-bg);
+            border-right: 1px solid rgba(180, 83, 9, 0.28);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            gap: 14px;
+            z-index: 1060;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        .rail-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(180, 83, 9, 0.35));
+            border: 1px solid var(--amber-cyber);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--amber-light);
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .rail-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .rail-btn:hover, .rail-btn.active {
+            background: rgba(180, 83, 9, 0.22);
+            border-color: var(--copper-border);
+            color: var(--amber-light);
+            box-shadow: 0 0 12px rgba(180, 83, 9, 0.3);
+        }
+        .rail-spacer { flex: 1; }
+
+        /* LỚP PHỦ MỜ KHI MỞ TASKBAR TRÊN DI ĐỘNG */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 4, 2, 0.76);
+            backdrop-filter: blur(4px);
+            z-index: 1040;
+        }
+        .sidebar-backdrop.active { display: block; }
+
+        /* THANH CÔNG CỤ & BỘ LỌC (SIDEBAR COLLAPSIBLE) */
         .sidebar {
-            width: 320px;
-            min-width: 320px;
+            width: 310px;
+            min-width: 310px;
             background: var(--sidebar-bg);
-            border-right: 1px solid rgba(56, 189, 248, 0.25);
-            box-shadow: 4px 0 24px rgba(2, 132, 199, 0.12);
+            border-right: 1px solid rgba(180, 83, 9, 0.32);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.65);
             padding: 20px 18px;
             display: flex;
             flex-direction: column;
@@ -737,227 +831,634 @@ HTML_TEMPLATE = r"""
             max-height: 100vh;
             position: sticky;
             top: 0;
+            z-index: 1050;
+            transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease;
+        }
+        .sidebar.collapsed {
+            margin-left: -310px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(180, 83, 9, 0.28);
         }
         .sidebar h2 {
             margin: 0;
-            font-size: 19px;
-            color: #f8fafc;
+            font-size: 16.5px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
         }
         .sidebar h3 {
-            margin: 4px 0 2px 0;
-            font-size: 15px;
-            color: #f8fafc;
-        }
-        .divider {
-            height: 1px;
-            background: rgba(56, 189, 248, 0.2);
-            margin: 6px 0;
-        }
-        /* MAIN CONTENT */
-        .main-area {
-            flex: 1;
-            padding: 24px 32px;
-            overflow-y: auto;
-        }
-        /* TECH HERO BANNER */
-        .tech-hero-banner {
-            background: linear-gradient(90deg, rgba(14, 165, 233, 0.14) 0%, rgba(37, 99, 235, 0.08) 50%, rgba(16, 185, 129, 0.1) 100%);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-left: 4px solid var(--cyan);
-            border-radius: 10px;
-            padding: 16px 22px;
-            margin-bottom: 22px;
-        }
-        .tech-badge {
-            display: inline-block;
-            background: rgba(14, 165, 233, 0.2);
-            border: 1px solid rgba(56, 189, 248, 0.45);
-            color: #7dd3fc;
-            font-size: 12px;
+            margin: 2px 0 0 0;
+            font-size: 13px;
+            font-family: var(--font-display);
             font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .btn-collapse-double {
+            background: rgba(180, 83, 9, 0.14);
+            border: 1px solid rgba(180, 83, 9, 0.38);
+            color: var(--amber-light);
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .btn-collapse-double:hover {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: var(--amber-cyber);
+            color: #fff;
+        }
+
+        /* FILTER PILLS TRONG SIDEBAR (GIỐNG MẪU) */
+        .quick-pills-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .filter-pill {
+            background: rgba(26, 16, 9, 0.9);
+            border: 1px solid rgba(180, 83, 9, 0.35);
+            color: var(--text-secondary);
             padding: 4px 10px;
             border-radius: 999px;
-            letter-spacing: 0.5px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.18s ease;
         }
-        /* GLASSMORPHISM CARDS */
+        .filter-pill:hover, .filter-pill.active {
+            background: linear-gradient(135deg, rgba(180, 83, 9, 0.45), rgba(245, 158, 11, 0.25));
+            border-color: var(--amber-cyber);
+            color: var(--amber-pale);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.22);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(180, 83, 9, 0.1), rgba(180, 83, 9, 0.38), rgba(180, 83, 9, 0.1));
+            margin: 4px 0;
+        }
+
+        /* VÙNG NỘI DUNG CHÍNH (MAIN CONTENT) - CĂN RỘNG HỢP LÝ */
+        .main-area {
+            flex: 1;
+            min-width: 0;
+            padding: 22px 34px 44px 34px;
+            max-width: 1640px;
+            margin: 0 auto;
+            overflow-y: auto;
+            transition: all 0.28s ease;
+        }
+
+        /* THANH HEADER ĐẦU TRANG (TOP NAVBAR GIỐNG MẪU) */
+        .top-utility-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid rgba(180, 83, 9, 0.26);
+            flex-wrap: wrap;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar-title {
+            font-family: var(--font-display);
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+            margin: 0;
+        }
+        .btn-toggle-taskbar {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(34, 20, 11, 0.92);
+            border: 1px solid var(--copper-border);
+            color: var(--amber-light);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-toggle-taskbar:hover {
+            border-color: var(--amber-cyber);
+            background: rgba(180, 83, 9, 0.25);
+            color: #ffffff;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.22);
+        }
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .top-badge-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(26, 16, 9, 0.92);
+            border: 1px solid rgba(180, 83, 9, 0.36);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+        .top-badge-btn:hover {
+            border-color: var(--amber-cyber);
+            color: var(--amber-pale);
+            background: rgba(180, 83, 9, 0.18);
+        }
+
+        /* BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (GIỐNG HÌNH MẪU) */
+        .tech-hero-banner {
+            position: relative;
+            background:
+                radial-gradient(circle at 50% 42%, rgba(245, 158, 11, 0.18) 0%, rgba(180, 83, 9, 0.08) 42%, transparent 72%),
+                linear-gradient(135deg, #170e07 0%, #211309 48%, #120b06 100%);
+            border: 1px solid rgba(217, 119, 6, 0.48);
+            outline: 1px solid rgba(245, 158, 11, 0.16);
+            outline-offset: -6px;
+            border-radius: 16px;
+            padding: 34px 32px 26px 32px;
+            margin-bottom: 28px;
+            text-align: center;
+            overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 0 36px rgba(180, 83, 9, 0.12);
+        }
+        /* Thanh notch kim loại đồng phía trên banner */
+        .tech-hero-banner::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 240px;
+            height: 7px;
+            background: linear-gradient(90deg, rgba(180, 83, 9, 0.3), rgba(245, 158, 11, 0.75), rgba(180, 83, 9, 0.3));
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 2px 12px rgba(245, 158, 11, 0.45);
+        }
+        .hero-decor-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 230px;
+            pointer-events: none;
+            opacity: 0.75;
+        }
+        .hero-decor-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .hero-title-glow {
+            position: relative;
+            z-index: 2;
+            margin: 0 0 10px 0;
+            font-family: var(--font-display);
+            font-size: 33px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(180deg, #fff7ed 0%, #fbbf24 52%, #d97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 18px rgba(245, 158, 11, 0.32));
+        }
+        .hero-subtitle {
+            position: relative;
+            z-index: 2;
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            max-width: 720px;
+            margin: 0 auto 18px auto;
+            line-height: 1.55;
+        }
+        .hero-indicators {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hero-indicator-bar {
+            width: 32px;
+            height: 4px;
+            border-radius: 999px;
+            background: var(--amber-cyber);
+            box-shadow: 0 0 10px var(--amber-cyber);
+        }
+        .hero-indicator-bar.muted {
+            width: 24px;
+            background: rgba(180, 83, 9, 0.45);
+            box-shadow: none;
+        }
+
+        /* TÁCH KHỐI RÕ NÉT (.glass-card) VỚI VIỀN BO GÓC KÉP & HIGHLIGHT ĐỒNG */
         .glass-card {
+            position: relative;
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(56, 189, 248, 0.28);
-            border-radius: 12px;
-            padding: 18px;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), inset 0 0 18px rgba(56, 189, 248, 0.04);
-            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(180, 83, 9, 0.38);
+            box-shadow:
+                0 14px 34px rgba(0, 0, 0, 0.58),
+                inset 0 0 0 1px rgba(245, 158, 11, 0.08),
+                inset 0 1px 0 rgba(251, 191, 36, 0.16);
+            border-radius: 14px;
+            padding: 22px;
+            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .glass-card:hover {
-            border-color: rgba(56, 189, 248, 0.55);
-            box-shadow: 0 10px 32px rgba(2, 132, 199, 0.22), inset 0 0 22px rgba(56, 189, 248, 0.07);
+            background: var(--card-bg-hover);
+            border-color: var(--amber-cyber);
+            box-shadow:
+                0 18px 42px rgba(0, 0, 0, 0.72),
+                0 0 22px rgba(180, 83, 9, 0.28),
+                inset 0 0 0 1px rgba(245, 158, 11, 0.25);
+            transform: translateY(-2px);
         }
         .models-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+            gap: 24px;
         }
-        /* INPUTS & BUTTONS */
+
+        /* HEADER CỦA THẺ MÔ HÌNH (ICON ĐỒNG + STATUS PILL COMPLETED) */
+        .card-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .card-copper-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: rgba(180, 83, 9, 0.2);
+            border: 1px solid rgba(217, 119, 6, 0.45);
+            color: var(--amber-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.12);
+        }
+        .status-pill-completed {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--emerald-bg);
+            border: 1px solid var(--emerald-border);
+            color: var(--emerald-text);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 999px;
+            letter-spacing: 0.2px;
+        }
+        .status-pill-pending {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(180, 83, 9, 0.26);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: var(--amber-light);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 999px;
+        }
+        .card-model-title {
+            margin: 0 0 12px 0;
+            font-family: var(--font-display);
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--amber-light);
+            letter-spacing: -0.2px;
+            cursor: pointer;
+            transition: color 0.18s ease;
+        }
+        .card-model-title:hover {
+            color: var(--amber-pale);
+            text-decoration: underline;
+        }
+
+        /* KHUNG PREVIEW SƠ ĐỒ MINI TRÊN THẺ (GIỐNG MẪU HÌNH 1.1) */
+        .card-schematic-preview {
+            background: rgba(42, 24, 12, 0.68);
+            border: 1px solid rgba(180, 83, 9, 0.35);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .card-schematic-preview:hover {
+            border-color: var(--amber-cyber);
+            background: rgba(56, 32, 15, 0.78);
+        }
+        .card-meta-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+        }
+        .card-meta-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            line-height: 1.5;
+        }
+        .card-meta-icon {
+            color: var(--amber-cyber);
+            font-size: 14px;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        /* HIGHLIGHT Ý CHÍNH & BADGE KÝ HIỆU ĐỒNG NÓNG (DEVICES BADGES) */
+        .devices-section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: lowercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 8px;
+        }
+        .device-badges-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-bottom: 16px;
+        }
+        .copper-device-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(180deg, rgba(180, 83, 9, 0.28) 0%, rgba(120, 53, 15, 0.38) 100%);
+            border: 1px solid rgba(217, 119, 6, 0.55);
+            color: var(--amber-pale);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            box-shadow: inset 0 1px 0 rgba(251, 191, 36, 0.2);
+        }
+        .copper-device-badge:hover {
+            background: linear-gradient(180deg, rgba(217, 119, 6, 0.48) 0%, rgba(180, 83, 9, 0.58) 100%);
+            border-color: var(--amber-light);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        /* LƯỚI NÚT & BỐ CỤC CO GIÃN */
+        .card-actions-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1.2fr 0.8fr 0.8fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .detail-top-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 22px;
+            margin-bottom: 24px;
+        }
+        .detail-gallery-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 22px;
+        }
+        .real-images-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+            gap: 16px;
+        }
+
+        /* INPUTS & BUTTONS THEO TÔNG TECH-BROWN / COPPER */
         label {
             display: block;
-            font-size: 13px;
-            color: #cbd5e1;
-            margin-bottom: 5px;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
             font-weight: 500;
         }
         input[type="text"], input[type="password"], select, textarea {
             width: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(56, 189, 248, 0.35);
-            color: #f8fafc;
-            border-radius: 7px;
-            padding: 8px 11px;
+            background: rgba(12, 7, 4, 0.92);
+            border: 1px solid rgba(180, 83, 9, 0.42);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-family: var(--font-sans);
             font-size: 13.5px;
             outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
         }
         input:focus, select:focus, textarea:focus {
-            border-color: var(--cyan);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+            border-color: var(--amber-cyber);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.22);
         }
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 8px 14px;
+            padding: 9px 13px;
             border-radius: 8px;
-            font-size: 13.5px;
+            font-family: var(--font-sans);
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.18s ease;
             border: 1px solid transparent;
             text-decoration: none;
+            text-align: center;
+            line-height: 1.3;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
-            color: #ffffff;
-            border-color: rgba(125, 211, 252, 0.4);
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+            color: #fffbeb;
+            border-color: rgba(251, 191, 36, 0.55);
+            box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%);
-            border-color: #7dd3fc;
-            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            border-color: #fde68a;
+            color: #ffffff;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
             transform: translateY(-1px);
         }
         .btn-secondary {
-            background: rgba(30, 41, 59, 0.85);
-            color: var(--text-main);
-            border-color: rgba(148, 163, 184, 0.35);
+            background: rgba(36, 22, 12, 0.9);
+            color: var(--text-secondary);
+            border-color: rgba(180, 83, 9, 0.38);
         }
         .btn-secondary:hover {
-            border-color: var(--cyan);
-            color: var(--cyan);
-            background: rgba(15, 23, 42, 0.95);
+            border-color: var(--amber-cyber);
+            color: var(--amber-light);
+            background: rgba(52, 30, 15, 0.95);
         }
         .btn-full { width: 100%; }
         code {
-            background: rgba(14, 165, 233, 0.15);
-            color: var(--cyan);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            padding: 2px 6px;
+            font-family: var(--font-mono);
+            background: rgba(180, 83, 9, 0.2);
+            color: var(--amber-light);
+            border: 1px solid rgba(217, 119, 6, 0.4);
+            padding: 2px 7px;
             border-radius: 5px;
-            font-size: 13px;
+            font-size: 12.5px;
         }
+
         /* MODALS */
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(3, 7, 18, 0.78);
-            backdrop-filter: blur(5px);
+            background: rgba(8, 4, 2, 0.84);
+            backdrop-filter: blur(6px);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            padding: 20px;
+            z-index: 1100;
+            padding: 18px;
         }
         .modal-backdrop.active { display: flex; }
         .modal-dialog {
-            background: #0f172a;
-            border: 1px solid rgba(56, 189, 248, 0.45);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(14, 165, 233, 0.22);
-            border-radius: 14px;
+            background: #160d07;
+            border: 1px solid var(--amber-cyber);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 32px rgba(180, 83, 9, 0.26);
+            border-radius: 16px;
             width: 100%;
-            max-width: 920px;
+            max-width: 940px;
             max-height: 92vh;
             overflow-y: auto;
-            padding: 22px 26px;
+            padding: 26px 28px;
             position: relative;
         }
         .modal-close {
-            position: absolute;
-            top: 16px;
-            right: 18px;
-            background: transparent;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            color: #cbd5e1;
-            border-radius: 6px;
-            padding: 4px 10px;
+            position: sticky;
+            top: 0;
+            float: right;
+            background: rgba(26, 16, 9, 0.95);
+            border: 1px solid rgba(217, 119, 6, 0.5);
+            color: var(--amber-light);
+            border-radius: 7px;
+            padding: 5px 11px;
             cursor: pointer;
             font-size: 15px;
+            z-index: 30;
         }
         .modal-close:hover {
             border-color: #f87171;
             color: #f87171;
         }
-        /* DIAGRAM BOX & SVG HOTSPOTS (HÌNH 1.1 & HÌNH 1.2) */
+
+        /* DIAGRAM BOX CREAM-SAND & SVG HOTSPOTS (ĐÚNG MẪU THẺ BÊN PHẢI TRONG ẢNH) */
         .diagram-box {
             position: relative;
             width: 100%;
-            max-width: 680px;
-            margin: 12px auto;
-            border: 2px solid var(--cyan);
+            max-width: 700px;
+            margin: 14px auto;
+            border: 2px solid var(--copper-bright);
+            outline: 1px solid rgba(245, 158, 11, 0.35);
+            outline-offset: 3px;
             border-radius: 12px;
-            background-color: #f8fafc;
+            background-color: var(--cream-sand);
             background-image:
-                linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px);
+                linear-gradient(rgba(180, 83, 9, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(180, 83, 9, 0.08) 1px, transparent 1px);
             background-size: 20px 20px;
-            box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
-            padding: 10px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 20px rgba(180, 83, 9, 0.2);
+            padding: 12px;
             user-select: none;
+        }
+        .diagram-box svg {
+            display: block;
+            width: 100%;
+            height: auto;
         }
         .svg-hotspot {
             cursor: pointer;
             transition: all 0.18s ease;
         }
         .svg-hotspot:hover .shape-elem {
-            stroke: #0284c7 !important;
-            fill: #e0f2fe !important;
-            filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.55));
+            stroke: #b45309 !important;
+            fill: #fef3c7 !important;
+            filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.75));
         }
         .svg-hotspot:hover .wire-path {
-            stroke: #0284c7 !important;
+            stroke: #d97706 !important;
             stroke-width: 4px !important;
-            filter: drop-shadow(0 0 5px rgba(2, 132, 199, 0.5));
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.7));
         }
         .svg-hotspot:hover .node-elem {
-            fill: #0284c7 !important;
+            fill: #d97706 !important;
             r: 8.5px;
-            filter: drop-shadow(0 0 7px rgba(2, 132, 199, 0.7));
+            filter: drop-shadow(0 0 9px rgba(245, 158, 11, 0.9));
         }
         .svg-hotspot:hover text {
-            fill: #0369a1 !important;
+            fill: #92400e !important;
             font-weight: bold;
         }
+
         /* CUSTOM IMAGE HOTSPOTS */
         .custom-diagram-wrapper {
             position: relative;
             display: block;
-            max-width: 680px;
+            max-width: 700px;
             width: 100%;
-            margin: 12px auto;
-            border: 2px solid var(--cyan);
+            margin: 14px auto;
+            border: 2px solid var(--copper-bright);
             border-radius: 12px;
-            background: #ffffff;
-            box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+            background: var(--cream-sand);
+            box-shadow: 0 0 24px rgba(180, 83, 9, 0.25);
             overflow: hidden;
         }
         .custom-diagram-wrapper img {
@@ -969,57 +1470,61 @@ HTML_TEMPLATE = r"""
         }
         .custom-hs-box {
             position: absolute;
-            border: 2px dashed rgba(2, 132, 199, 0.8);
-            background: rgba(56, 189, 248, 0.15);
+            border: 2px dashed rgba(180, 83, 9, 0.9);
+            background: rgba(245, 158, 11, 0.18);
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.18s ease;
         }
         .custom-hs-box:hover {
-            border: 2.5px solid #0284c7;
-            background: rgba(14, 165, 233, 0.32);
-            box-shadow: 0 0 14px rgba(2, 132, 199, 0.75);
+            border: 2.5px solid #d97706;
+            background: rgba(245, 158, 11, 0.34);
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.8);
             z-index: 20;
         }
         .hs-tag {
             position: absolute;
-            top: -20px;
+            top: -21px;
             left: 0;
-            background: rgba(15, 23, 42, 0.92);
-            color: var(--cyan);
+            background: #160d07;
+            color: var(--amber-light);
+            font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
             padding: 1px 6px;
             border-radius: 4px;
-            border: 1px solid rgba(56, 189, 248, 0.5);
+            border: 1px solid var(--amber-cyber);
             white-space: nowrap;
             pointer-events: none;
         }
+
         /* FLOATING TOOLTIP */
         #floating-tooltip {
             position: fixed;
             display: none;
-            background: rgba(15, 23, 42, 0.96);
-            color: #f8fafc;
-            padding: 7px 13px;
-            border-radius: 7px;
-            font-size: 13.5px;
+            background: rgba(20, 12, 6, 0.96);
+            color: var(--amber-pale);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 500;
             pointer-events: none;
             z-index: 9999;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-            border: 1px solid var(--cyan);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--amber-cyber);
             white-space: nowrap;
         }
+
         /* HOTSPOT EDITOR STAGE */
         .canvas-stage-wrap {
             display: flex;
             justify-content: center;
-            background: #070d19;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px dashed rgba(56, 189, 248, 0.4);
+            background: #0c0704;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(217, 119, 6, 0.5);
             user-select: none;
+            overflow: hidden;
         }
         #editor-stage {
             position: relative;
@@ -1027,6 +1532,7 @@ HTML_TEMPLATE = r"""
             max-width: 100%;
             cursor: crosshair;
             line-height: 0;
+            touch-action: none;
         }
         #editor-stage img {
             display: block;
@@ -1034,27 +1540,28 @@ HTML_TEMPLATE = r"""
             max-height: 380px;
             width: auto;
             height: auto;
-            background: #ffffff;
+            background: var(--cream-sand);
             border-radius: 6px;
             pointer-events: none;
         }
         .drawn-box {
             position: absolute;
-            border: 2px solid #0284c7;
-            background: rgba(14, 165, 233, 0.24);
+            border: 2px solid #d97706;
+            background: rgba(245, 158, 11, 0.25);
             border-radius: 4px;
         }
         .drawn-box-label {
             position: absolute;
-            top: -19px;
+            top: -20px;
             left: 0;
-            background: #0f172a;
-            color: #7dd3fc;
+            background: #140c06;
+            color: var(--amber-light);
+            font-family: var(--font-mono);
             font-size: 11px;
             font-weight: 600;
             padding: 2px 6px;
             border-radius: 4px;
-            border: 1px solid var(--cyan);
+            border: 1px solid var(--amber-cyber);
             white-space: nowrap;
             line-height: 1.2;
             display: flex;
@@ -1066,25 +1573,28 @@ HTML_TEMPLATE = r"""
             cursor: pointer;
             font-weight: bold;
             margin-left: 4px;
+            padding: 0 3px;
         }
         #rubber-band {
             position: absolute;
             display: none;
-            border: 2px dashed #22d3ee;
-            background: rgba(34, 211, 238, 0.25);
+            border: 2px dashed var(--amber-light);
+            background: rgba(245, 158, 11, 0.28);
             pointer-events: none;
         }
-        /* TOAST & ERROR BOX */
+
+        /* TOAST & ALERTS */
         #toast-box {
             position: fixed;
             bottom: 22px;
-            right: 24px;
-            background: #0f172a;
-            border: 1px solid var(--cyan);
-            color: #f8fafc;
+            right: 22px;
+            max-width: calc(100vw - 44px);
+            background: #180f08;
+            border: 1px solid var(--amber-cyber);
+            color: var(--amber-pale);
             padding: 12px 18px;
             border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
             z-index: 9999;
             display: none;
             font-weight: 600;
@@ -1100,44 +1610,155 @@ HTML_TEMPLATE = r"""
             display: none;
         }
         .info-alert {
-            background: rgba(14, 165, 233, 0.14);
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            color: #bae6fd;
-            padding: 14px 16px;
+            background: rgba(180, 83, 9, 0.16);
+            border: 1px solid rgba(245, 158, 11, 0.42);
+            color: var(--amber-pale);
+            padding: 14px 18px;
             border-radius: 10px;
             font-size: 14px;
         }
+
+        /* ==========================================
+           TỐI ƯU HÓA GIAO DIỆN DI ĐỘNG (MOBILE RESPONSIVE)
+           ========================================== */
         @media (max-width: 900px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; max-height: none; position: static; }
-            .models-grid { grid-template-columns: 1fr; }
+            .icon-rail { display: none; }
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 86vw;
+                max-width: 320px;
+                min-width: unset;
+                height: 100vh;
+                max-height: 100vh;
+                margin-left: 0 !important;
+                transform: translateX(0);
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+            .sidebar.collapsed {
+                transform: translateX(-105%);
+                pointer-events: none !important;
+            }
+            .main-area {
+                padding: 14px 14px 34px 14px;
+                width: 100%;
+            }
+            .tech-hero-banner {
+                padding: 24px 16px 20px 16px;
+                margin-bottom: 20px;
+            }
+            .hero-decor-left, .hero-decor-right {
+                opacity: 0.25;
+            }
+            .hero-title-glow {
+                font-size: 23px !important;
+                line-height: 1.3;
+            }
+            .models-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .card-actions-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .form-grid-2,
+            .detail-top-grid,
+            .detail-gallery-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .modal-backdrop { padding: 8px; }
+            .modal-dialog {
+                padding: 16px 14px;
+                max-height: 94vh;
+                border-radius: 12px;
+            }
+            .glass-card { padding: 16px; }
+            #floating-tooltip { display: none !important; }
+        }
+
+        @media (max-width: 480px) {
+            .top-utility-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .top-bar-left {
+                justify-content: space-between;
+            }
+            .top-bar-actions {
+                justify-content: space-between;
+            }
+            .btn {
+                padding: 9px 10px;
+                font-size: 12.5px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <h2>🎛️ Công cụ & Bộ lọc ĐĐT</h2>
+    <!-- THANH ICON RAIL DỌC BÊN TRÁI (GIỐNG MẪU DASHBOARD) -->
+    <nav class="icon-rail" aria-label="Quick Navigation">
+        <div class="rail-logo" onclick="backToMainView()" title="Trang chủ Model ĐĐT">⚡</div>
+        <button class="rail-btn active" onclick="toggleSidebar()" title="Đóng / Mở Thanh Công cụ & Bộ lọc">⊞</button>
+        <button class="rail-btn" onclick="openCrudModal(null)" title="Tạo Mô hình mới">➕</button>
+        <button class="rail-btn" onclick="setQuickFilter('')" title="Hiển thị toàn bộ mô hình">〰</button>
+        <a href="/api/export" download="data.json" class="rail-btn" title="Xuất (Export) data.json" style="text-decoration:none;">📤</a>
+        <div class="rail-spacer"></div>
+        <button class="rail-btn" onclick="toggleSidebar(true)" title="Cấu hình & Đồng bộ GitHub">⚙️</button>
+    </nav>
+
+    <!-- LỚP NỀN MỜ KHI MỞ SIDEBAR TRÊN MOBILE -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+
+    <!-- SIDEBAR: THANH CÔNG CỤ & BỘ LỌC -->
+    <aside id="app-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Thanh Công cụ & Bộ lọc</h2>
+            <button class="btn-collapse-double" onclick="toggleSidebar(false)" title="Thu gọn thanh công cụ">
+                &lt;&lt;
+            </button>
+        </div>
+
         <button class="btn btn-primary btn-full" onclick="openCrudModal(null)">➕ Tạo Mô hình mới</button>
 
-        <div class="divider"></div>
-        <h3>🔎 Tìm kiếm & Lọc</h3>
         <div>
             <label>Tìm theo Tên (Mô hình / Thiết bị)</label>
             <input type="text" id="filter-name" placeholder="VD: Nguồn, Tải, Nhánh, Nút, Vòng..." oninput="renderMainWorkspace()" />
         </div>
+
+        <!-- BỘ LỌC NHANH BẰNG PILL TAGS (THEO MẪU) -->
+        <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="margin:0;">Filters (Chủ đề nhanh)</label>
+                <span style="font-size:11.5px; color:var(--amber-light); cursor:pointer;" onclick="resetAllFilters()">Xóa lọc</span>
+            </div>
+            <div class="quick-pills-wrap">
+                <span class="filter-pill active" id="pill-all" onclick="setQuickFilter('')">Tất cả</span>
+                <span class="filter-pill" onclick="setQuickFilter('Nguồn')">Nguồn điện</span>
+                <span class="filter-pill" onclick="setQuickFilter('Tải')">Phụ tải</span>
+                <span class="filter-pill" onclick="setQuickFilter('Nhánh')">Nhánh</span>
+                <span class="filter-pill" onclick="setQuickFilter('Nút')">Nút</span>
+                <span class="filter-pill" onclick="setQuickFilter('Vòng')">Mạch vòng</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+        <h3>🔎 Bộ lọc chuyên sâu</h3>
         <div>
             <label>Tìm theo Khái niệm</label>
             <input type="text" id="filter-concept" placeholder="VD: mạch kín, giao điểm, điện năng..." oninput="renderMainWorkspace()" />
         </div>
         <div>
-            <label>Tìm theo Ký hiệu</label>
+            <label>Tìm theo Ký hiệu kỹ thuật</label>
             <input type="text" id="filter-symbol" placeholder="VD: E1, R1, Nút A, Dây dẫn..." oninput="renderMainWorkspace()" />
         </div>
         <div>
             <label>Lọc theo Trạng thái</label>
             <select id="filter-status" onchange="renderMainWorkspace()">
-                <option value="Tất cả">Tất cả</option>
+                <option value="Tất cả">Tất cả trạng thái</option>
                 <option value="completed">completed</option>
                 <option value="pending">pending</option>
             </select>
@@ -1146,7 +1767,7 @@ HTML_TEMPLATE = r"""
         <div class="divider"></div>
         <h3>📦 Sao lưu & Chia sẻ (JSON)</h3>
         <a href="/api/export" class="btn btn-secondary btn-full" download="data.json">📤 Xuất (Export) data.json</a>
-        <div style="margin-top: 6px;">
+        <div style="margin-top: 4px;">
             <label>📥 Nhập (Import) file data.json</label>
             <input type="file" id="import-json-input" accept=".json" onchange="handleImportJson(event)" style="font-size:12px;" />
         </div>
@@ -1156,8 +1777,8 @@ HTML_TEMPLATE = r"""
         <div id="github-status-text" style="font-size:12.5px; color:var(--text-muted);">
             🟢 Lưu trực tiếp trên ổ cứng Server (<code>data.json</code>)
         </div>
-        <details style="font-size:12.5px; color:#cbd5e1;">
-            <summary style="cursor:pointer; color:var(--cyan); font-weight:600;">⚙️ Cấu hình GitHub Auto-Sync (Tùy chọn)</summary>
+        <details style="font-size:12.5px; color:var(--text-secondary);">
+            <summary style="cursor:pointer; color:var(--amber-light); font-weight:600;">⚙️ Cấu hình GitHub Auto-Sync</summary>
             <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
                 <input type="text" id="gh-repo" placeholder="ten-ban/model-ddt" />
                 <input type="password" id="gh-token" placeholder="GitHub Token (ghp_...)" />
@@ -1167,29 +1788,80 @@ HTML_TEMPLATE = r"""
         </details>
 
         <div class="divider"></div>
-        <div style="font-size:13px; color:var(--text-muted);">
-            Tổng số mô hình hiện có: <b id="total-models-count" style="color:#f8fafc;">0</b>
+        <div style="font-size:12.5px; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>Tổng số mô hình:</span>
+            <b id="total-models-count" style="color:var(--amber-light); font-family:var(--font-mono);">0</b>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <main class="main-area">
+        <!-- THANH HEADER ĐẦU TRANG (GIỐNG MẪU) -->
+        <header class="top-utility-bar">
+            <div class="top-bar-left">
+                <button id="btn-open-taskbar" class="btn-toggle-taskbar" onclick="toggleSidebar()">
+                    <span id="toggle-taskbar-icon">☰</span>
+                    <span id="toggle-taskbar-text">Thanh Công cụ</span>
+                </button>
+                <h2 class="top-bar-title">Model ĐĐT — Kỹ thuật Điện - Điện tử</h2>
+            </div>
+            <div class="top-bar-actions">
+                <button class="top-badge-btn" onclick="openCrudModal(null)" title="Thêm mô hình mới">
+                    ➕ Thêm Mô hình
+                </button>
+                <a href="/api/export" download="data.json" class="top-badge-btn" title="Tải file data.json">
+                    💾 Backup JSON
+                </a>
+                <button class="top-badge-btn" onclick="toggleSidebar(true)" title="Mở bộ lọc và cấu hình">
+                    ⚙️ Bộ lọc & Sync
+                </button>
+            </div>
+        </header>
+
         <!-- VIEW 1: MAIN WORKSPACE -->
         <div id="view-main">
+            <!-- BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (GIỐNG MẪU) -->
             <div class="tech-hero-banner">
-                <span class="tech-badge">⚡ HỆ THỐNG MÔ PHỎNG & TRỰC QUAN HÓA SƠ ĐỒ MẠCH ĐIỆN</span>
-                <h1 style="margin:6px 0 4px 0; font-size:28px;">Model ĐĐT — Kỹ thuật Điện - Điện tử</h1>
-                <span style="color:var(--text-muted); font-size:14.5px;">
-                    Chọn <b>Thẻ mô hình</b> để mở bản vẽ kỹ thuật tương tác (<b>Hình 1.1</b> & <b>Hình 1.2</b>),
-                    hoặc dùng <b>🎯 Khoanh vùng</b> để tải ảnh sơ đồ mới và kéo chuột đánh dấu ký hiệu bằng tay.
-                </span>
+                <!-- Họa tiết mạch đồng phát sáng bên trái -->
+                <svg class="hero-decor-left" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M-10 35 L75 35 L125 85 L75 135 L-10 135" stroke="url(#copperGrad)" stroke-width="3.5" opacity="0.85"/>
+                    <path d="M-10 55 L65 55 L95 85 L65 115 L-10 115" stroke="#f59e0b" stroke-width="1.5" opacity="0.55"/>
+                    <circle cx="125" cy="85" r="5" fill="#fbbf24" />
+                    <defs>
+                        <linearGradient id="copperGrad" x1="0" y1="0" x2="200" y2="180" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#b45309"/>
+                            <stop offset="50%" stop-color="#fbbf24"/>
+                            <stop offset="100%" stop-color="#78350f"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <!-- Họa tiết bản vẽ tọa độ kỹ thuật bên phải -->
+                <svg class="hero-decor-right" viewBox="0 0 260 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="190" cy="125" r="78" stroke="#d97706" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
+                    <circle cx="190" cy="125" r="48" stroke="#f59e0b" stroke-width="1.2" opacity="0.5"/>
+                    <line x1="80" y1="125" x2="260" y2="125" stroke="#b45309" stroke-width="1" opacity="0.6"/>
+                    <line x1="190" y1="15" x2="190" y2="180" stroke="#b45309" stroke-width="1" opacity="0.6"/>
+                    <line x1="120" y1="55" x2="245" y2="175" stroke="#f59e0b" stroke-width="1.2" opacity="0.45"/>
+                    <circle cx="156" cy="91" r="3.5" fill="#fbbf24"/>
+                    <circle cx="190" cy="77" r="3.5" fill="#fbbf24"/>
+                </svg>
+
+                <h1 class="hero-title-glow">Model ĐĐT - Kỹ thuật Điện - Điện tử</h1>
+                <p class="hero-subtitle">
+                    Hệ thống trực quan hóa sơ đồ mạch điện & học liệu tương tác — Chọn <b>Thẻ mô hình</b> hoặc các <b>Badge ký hiệu</b> để khảo sát bản vẽ kỹ thuật (<b>Hình 1.1</b>, <b>Hình 1.2</b>) và khoanh vùng Hotspot.
+                </p>
+                <div class="hero-indicators">
+                    <span class="hero-indicator-bar"></span>
+                    <span class="hero-indicator-bar muted"></span>
+                </div>
             </div>
+
             <div id="workspace-container"></div>
         </div>
 
         <!-- VIEW 2: DEVICE DETAIL PAGE -->
         <div id="view-device-detail" style="display:none;">
-            <button class="btn btn-secondary" onclick="backToMainView()" style="margin-bottom:16px;">⬅️ Quay lại Màn hình chính</button>
+            <button class="btn btn-secondary" onclick="backToMainView()" style="margin-bottom:18px;">⬅️ Quay lại Bảng điều khiển chính</button>
             <div id="device-detail-content"></div>
         </div>
     </main>
@@ -1214,10 +1886,10 @@ HTML_TEMPLATE = r"""
     <div class="modal-backdrop" id="modal-crud">
         <div class="modal-dialog">
             <button class="modal-close" onclick="closeModal('modal-crud')">✕</button>
-            <h2 id="crud-modal-title" style="margin-top:0;">📝 Thêm / Chỉnh sửa Mô hình ĐĐT</h2>
+            <h2 id="crud-modal-title" style="margin-top:0; font-family:var(--font-display); color:var(--amber-light);">📝 Thêm / Chỉnh sửa Mô hình ĐĐT</h2>
             <div id="crud-error-box" class="error-alert"></div>
             <input type="hidden" id="crud-id" />
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label>Tên mô hình (*)</label>
                     <input type="text" id="crud-title" placeholder="VD: Hình 1.1: Mô hình mạch điện" />
@@ -1227,7 +1899,7 @@ HTML_TEMPLATE = r"""
                     <input type="text" id="crud-symbol" placeholder="VD: H1.1" />
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label>Danh mục / Học phần (*)</label>
                     <input type="text" id="crud-category" />
@@ -1240,11 +1912,11 @@ HTML_TEMPLATE = r"""
                     </select>
                 </div>
             </div>
-            <div style="margin-bottom:12px;">
+            <div style="margin-bottom:14px;">
                 <label>Khái niệm & Nguyên lý mô hình (*)</label>
                 <textarea id="crud-concept" rows="3" placeholder="Mô tả khái niệm và nguyên lý hoạt động tổng quát của mô hình..."></textarea>
             </div>
-            <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label>Tải ảnh sơ đồ tùy chỉnh (.png, .jpg, .webp)</label>
                     <input type="file" id="crud-diagram-file" accept="image/*" />
@@ -1254,9 +1926,9 @@ HTML_TEMPLATE = r"""
                     <input type="text" id="crud-diagram-url" placeholder="https://example.com/diagram.png" />
                 </div>
             </div>
-            <div style="margin-bottom:14px;">
+            <div style="margin-bottom:16px;">
                 <label>Danh sách Thiết bị / Khái niệm trên mô hình (*)</label>
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px; line-height:1.45;">
                     Mỗi dòng 1 mục theo cú pháp: <code>Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết</code>
                     (Nhập <code>-</code> ở cột Ký hiệu nếu khái niệm không có ký hiệu trên hình, ví dụ: Vòng).
                 </div>
@@ -1277,6 +1949,80 @@ HTML_TEMPLATE = r"""
         let editorModelId = null;
 
         const tooltipEl = document.getElementById('floating-tooltip');
+
+        // ==========================================
+        // ĐIỀU KHIỂN THU GỌN / MỞ RA THANH CÔNG CỤ (SIDEBAR)
+        // ==========================================
+        function toggleSidebar(forceOpen) {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const btnText = document.getElementById('toggle-taskbar-text');
+            const isMobile = window.innerWidth <= 900;
+
+            let willCollapse;
+            if (typeof forceOpen === 'boolean') {
+                willCollapse = !forceOpen;
+            } else {
+                willCollapse = !sidebar.classList.contains('collapsed');
+            }
+
+            if (willCollapse) {
+                sidebar.classList.add('collapsed');
+                backdrop.classList.remove('active');
+                if (btnText) btnText.textContent = 'Mở Thanh Công cụ';
+            } else {
+                sidebar.classList.remove('collapsed');
+                if (isMobile) {
+                    backdrop.classList.add('active');
+                } else {
+                    backdrop.classList.remove('active');
+                }
+                if (btnText) btnText.textContent = 'Thu gọn Công cụ';
+            }
+        }
+
+        function initResponsiveSidebarState() {
+            const sidebar = document.getElementById('app-sidebar');
+            const btnText = document.getElementById('toggle-taskbar-text');
+            if (window.innerWidth <= 900) {
+                sidebar.classList.add('collapsed');
+                if (btnText) btnText.textContent = 'Mở Thanh Công cụ';
+            } else {
+                sidebar.classList.remove('collapsed');
+                if (btnText) btnText.textContent = 'Thu gọn Công cụ';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth > 900) {
+                backdrop.classList.remove('active');
+            } else if (!sidebar.classList.contains('collapsed')) {
+                backdrop.classList.add('active');
+            }
+        });
+
+        function setQuickFilter(keyword) {
+            const nameInput = document.getElementById('filter-name');
+            if (nameInput) nameInput.value = keyword;
+            document.querySelectorAll('.filter-pill').forEach(el => {
+                if ((keyword === '' && el.id === 'pill-all') || (keyword !== '' && el.textContent.includes(keyword))) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+            renderMainWorkspace();
+        }
+
+        function resetAllFilters() {
+            document.getElementById('filter-name').value = '';
+            document.getElementById('filter-concept').value = '';
+            document.getElementById('filter-symbol').value = '';
+            document.getElementById('filter-status').value = 'Tất cả';
+            setQuickFilter('');
+        }
 
         function escapeHtml(str) {
             return String(str || '')
@@ -1319,7 +2065,7 @@ HTML_TEMPLATE = r"""
         }
 
         // ==========================================
-        // RENDER LƯỚI THẺ MÔ HÌNH (MAIN WORKSPACE)
+        // RENDER LƯỚI THẺ MÔ HÌNH THEO MẪU TECH-BROWN DASHBOARD
         // ==========================================
         function renderMainWorkspace() {
             document.getElementById('total-models-count').textContent = modelsData.length;
@@ -1355,35 +2101,76 @@ HTML_TEMPLATE = r"""
 
             let html = `<div class="models-grid">`;
             filtered.forEach(model => {
-                const badge = model.status === 'completed' ? '🟢 Completed' : '🟡 Pending';
+                const statusBadge = model.status === 'completed'
+                    ? `<span class="status-pill-completed">〰 Completed</span>`
+                    : `<span class="status-pill-pending">⏳ Pending</span>`;
+
                 const devs = model.devices || [];
-                const devTags = devs.map(d =>
-                    d.symbol ? `<code>${escapeHtml(d.symbol)}</code> (${escapeHtml(d.name)})`
-                             : `<i>${escapeHtml(d.name)} (không ký hiệu)</i>`
-                ).join(', ');
+                const devBadgesHtml = devs.map(d => {
+                    const label = d.symbol ? d.symbol : d.name;
+                    return `<span class="copper-device-badge"
+                                  title="${escapeHtml(d.name)}: ${escapeHtml(d.concept)}"
+                                  onclick="navigateToDeviceDetail('${model.id}', '${d.device_id}', '${escapeHtml(d.symbol || '')}')">
+                                ${escapeHtml(label)}
+                            </span>`;
+                }).join('');
+
+                // Khung sơ đồ thu nhỏ (Schematic Strip) mang phong cách mẫu Hình 1.1
+                const miniSchematicSvg = `
+                <div class="card-schematic-preview" onclick="openModelModal('${model.id}')" title="Nhấn để mở Bản vẽ Kỹ thuật tương tác">
+                    <svg viewBox="0 0 360 54" width="100%" height="46" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="25" y1="27" x2="95" y2="27" stroke="#d97706" stroke-width="1.5"/>
+                        <circle cx="25" cy="27" r="11" fill="none" stroke="#fbbf24" stroke-width="1.6"/>
+                        <text x="25" y="31" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fde68a">${escapeHtml(model.symbol || 'ĐĐT')}</text>
+                        <rect x="95" y="19" width="38" height="16" fill="rgba(245,158,11,0.18)" stroke="#f59e0b" stroke-width="1.5" rx="2"/>
+                        <line x1="133" y1="27" x2="195" y2="27" stroke="#d97706" stroke-width="1.5"/>
+                        <circle cx="195" cy="27" r="3.5" fill="#fbbf24"/>
+                        <line x1="195" y1="27" x2="255" y2="27" stroke="#d97706" stroke-width="1.5"/>
+                        <rect x="255" y="19" width="38" height="16" fill="rgba(245,158,11,0.18)" stroke="#f59e0b" stroke-width="1.5" rx="2"/>
+                        <line x1="293" y1="27" x2="340" y2="27" stroke="#d97706" stroke-width="1.5"/>
+                        <circle cx="340" cy="27" r="4" fill="#34d399"/>
+                    </svg>
+                </div>`;
 
                 html += `
                 <div class="glass-card">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-                        <h3 style="margin:0 0 8px 0; font-size:20px; color:#f8fafc;">⚡ ${escapeHtml(model.title)}</h3>
-                        <span style="font-size:12.5px; color:var(--text-muted); white-space:nowrap;">${badge}</span>
+                    <div>
+                        <div class="card-top-bar">
+                            <div class="card-copper-icon" title="Mã mô hình: ${escapeHtml(model.symbol || 'N/A')}">❖</div>
+                            ${statusBadge}
+                        </div>
+
+                        <h3 class="card-model-title" onclick="openModelModal('${model.id}')">
+                            ${escapeHtml(model.title)}
+                        </h3>
+
+                        ${miniSchematicSvg}
+
+                        <div class="card-meta-list">
+                            <div class="card-meta-row">
+                                <span class="card-meta-icon">◈</span>
+                                <span><b>Mã ký hiệu:</b> <code>${escapeHtml(model.symbol || 'N/A')}</code> &bull; <b>Phân loại:</b> ${escapeHtml(model.category)}</span>
+                            </div>
+                            <div class="card-meta-row">
+                                <span class="card-meta-icon">📖</span>
+                                <span><b>Khái niệm:</b> ${escapeHtml(model.concept)}</span>
+                            </div>
+                        </div>
                     </div>
-                    <p style="margin:6px 0; font-size:14px;">
-                        <b>Ký hiệu mô hình:</b> <code>${escapeHtml(model.symbol || 'N/A')}</code> |
-                        <b>Phân loại:</b> ${escapeHtml(model.category)}
-                    </p>
-                    <p style="margin:8px 0; font-size:14px; line-height:1.5;">
-                        <b>Khái niệm:</b> ${escapeHtml(model.concept)}
-                    </p>
-                    <p style="margin:8px 0 14px 0; font-size:13.5px; line-height:1.5;">
-                        <b>Thiết bị & Khái niệm (${devs.length}):</b> ${devTags || 'Chưa có'}
-                    </p>
-                    <div class="divider"></div>
-                    <div style="display:grid; grid-template-columns: 1.6fr 1.2fr 0.8fr 0.8fr; gap:8px; margin-top:12px;">
-                        <button class="btn btn-primary" onclick="openModelModal('${model.id}')">🔍 Mở Thẻ Mô hình</button>
-                        <button class="btn btn-secondary" onclick="openHotspotModal('${model.id}')">🎯 Khoanh vùng</button>
-                        <button class="btn btn-secondary" onclick="openCrudModal('${model.id}')">✏️ Sửa</button>
-                        <button class="btn btn-secondary" onclick="deleteModel('${model.id}')">🗑️ Xóa</button>
+
+                    <div>
+                        <div class="devices-section-label">devices (${devs.length} phần tử / khái niệm — nhấn để xem chi tiết)</div>
+                        <div class="device-badges-wrap">
+                            ${devBadgesHtml || '<span style="font-size:12.5px; color:var(--text-muted);">Chưa có thiết bị</span>'}
+                        </div>
+
+                        <div class="divider"></div>
+                        <div class="card-actions-grid">
+                            <button class="btn btn-primary" onclick="openModelModal('${model.id}')">🔍 Mở Sơ đồ</button>
+                            <button class="btn btn-secondary" onclick="openHotspotModal('${model.id}')">🎯 Khoanh vùng</button>
+                            <button class="btn btn-secondary" onclick="openCrudModal('${model.id}')">✏️ Sửa</button>
+                            <button class="btn btn-secondary" onclick="deleteModel('${model.id}')">🗑️ Xóa</button>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -1392,7 +2179,7 @@ HTML_TEMPLATE = r"""
         }
 
         // ==========================================
-        // BẢN VẼ KỸ THUẬT SVG GỐC (HÌNH 1.1 & HÌNH 1.2)
+        // BẢN VẼ KỸ THUẬT SVG GỐC (HÌNH 1.1 & HÌNH 1.2) - GIỮ NGUYÊN 100% CẤU TRÚC
         // ==========================================
         function getSvgMarkup(model) {
             if (model.diagram_type === 'fig_1_1') {
@@ -1401,25 +2188,25 @@ HTML_TEMPLATE = r"""
                     <svg viewBox="0 0 650 330" width="100%" height="310" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <marker id="arrow-h11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a"/>
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#1c1109"/>
                             </marker>
                         </defs>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h11-daydan" data-sym="Dây dẫn" data-name="Dây dẫn">
                             <path d="M 160 115 L 160 65 L 480 65 L 480 120 M 480 200 L 480 255 L 160 255 L 160 205" fill="none" stroke="transparent" stroke-width="24"/>
-                            <path class="wire-path" d="M 160 115 L 160 65 L 480 65 L 480 120 M 480 200 L 480 255 L 160 255 L 160 205" fill="none" stroke="#0f172a" stroke-width="2.6"/>
-                            <text x="315" y="25" font-family="Times New Roman, serif" font-size="20" fill="#0f172a">Dây dẫn</text>
-                            <line x1="340" y1="32" x2="318" y2="61" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow-h11)"/>
+                            <path class="wire-path" d="M 160 115 L 160 65 L 480 65 L 480 120 M 480 200 L 480 255 L 160 255 L 160 205" fill="none" stroke="#1c1109" stroke-width="2.6"/>
+                            <text x="315" y="25" font-family="Times New Roman, serif" font-size="20" fill="#1c1109">Dây dẫn</text>
+                            <line x1="340" y1="32" x2="318" y2="61" stroke="#1c1109" stroke-width="2" marker-end="url(#arrow-h11)"/>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h11-nguon" data-sym="Nguồn" data-name="Nguồn điện">
-                            <circle class="shape-elem" cx="160" cy="160" r="45" fill="#ffffff" stroke="#0f172a" stroke-width="2.6"/>
-                            <text x="160" y="166" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">Nguồn</text>
+                            <circle class="shape-elem" cx="160" cy="160" r="45" fill="#fffdf9" stroke="#1c1109" stroke-width="2.6"/>
+                            <text x="160" y="166" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">Nguồn</text>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h11-tai" data-sym="Tải" data-name="Phụ tải (Tải)">
                             <rect x="420" y="115" width="90" height="90" fill="transparent"/>
-                            <rect class="shape-elem" x="466" y="120" width="28" height="80" fill="#ffffff" stroke="#0f172a" stroke-width="5"/>
-                            <text x="453" y="168" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">Tải</text>
+                            <rect class="shape-elem" x="466" y="120" width="28" height="80" fill="#fffdf9" stroke="#1c1109" stroke-width="5"/>
+                            <text x="453" y="168" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">Tải</text>
                         </g>
-                        <text x="325" y="305" text-anchor="middle" font-family="Times New Roman, serif" font-style="italic" font-size="19" fill="#0f172a">
+                        <text x="325" y="305" text-anchor="middle" font-family="Times New Roman, serif" font-style="italic" font-size="19" fill="#1c1109">
                             Hình 1.1 Mô hình mạch điện
                         </text>
                     </svg>
@@ -1430,49 +2217,49 @@ HTML_TEMPLATE = r"""
                     <svg viewBox="0 0 700 370" width="100%" height="350" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <marker id="arrow-h12" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
-                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a"/>
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#1c1109"/>
                             </marker>
                         </defs>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h12-daydan" data-sym="Dây dẫn" data-name="Dây dẫn nối mạch">
                             <path d="M 140 162 L 140 60 L 215 60 M 285 60 L 350 60 M 350 60 L 415 60 M 485 60 L 560 60 L 560 162 M 140 206 L 140 285 L 350 285 M 560 206 L 560 285 L 350 285 M 350 60 L 350 155 M 350 225 L 350 285" fill="none" stroke="transparent" stroke-width="20"/>
-                            <path class="wire-path" d="M 140 162 L 140 60 L 215 60 M 285 60 L 350 60 M 350 60 L 415 60 M 485 60 L 560 60 L 560 162 M 140 206 L 140 285 L 350 285 M 560 206 L 560 285 L 350 285 M 350 60 L 350 155 M 350 225 L 350 285" fill="none" stroke="#0f172a" stroke-width="2.4"/>
+                            <path class="wire-path" d="M 140 162 L 140 60 L 215 60 M 285 60 L 350 60 M 350 60 L 415 60 M 485 60 L 560 60 L 560 162 M 140 206 L 140 285 L 350 285 M 560 206 L 560 285 L 350 285 M 350 60 L 350 155 M 350 225 L 350 285" fill="none" stroke="#1c1109" stroke-width="2.4"/>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h12-nguon" data-sym="E1, E2" data-name="Nguồn điện (E1, E2)">
-                            <circle class="shape-elem" cx="140" cy="184" r="22" fill="#ffffff" stroke="#0f172a" stroke-width="2.4"/>
-                            <line x1="140" y1="201" x2="140" y2="168" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow-h12)"/>
-                            <text x="110" y="191" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">E1</text>
-                            <circle class="shape-elem" cx="560" cy="184" r="22" fill="#ffffff" stroke="#0f172a" stroke-width="2.4"/>
-                            <line x1="560" y1="201" x2="560" y2="168" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow-h12)"/>
-                            <text x="530" y="191" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">E2</text>
+                            <circle class="shape-elem" cx="140" cy="184" r="22" fill="#fffdf9" stroke="#1c1109" stroke-width="2.4"/>
+                            <line x1="140" y1="201" x2="140" y2="168" stroke="#1c1109" stroke-width="2" marker-end="url(#arrow-h12)"/>
+                            <text x="110" y="191" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">E1</text>
+                            <circle class="shape-elem" cx="560" cy="184" r="22" fill="#fffdf9" stroke="#1c1109" stroke-width="2.4"/>
+                            <line x1="560" y1="201" x2="560" y2="168" stroke="#1c1109" stroke-width="2" marker-end="url(#arrow-h12)"/>
+                            <text x="530" y="191" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">E2</text>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h12-tai" data-sym="R1, R2, R3" data-name="Phụ tải / Điện trở (R1, R2, R3)">
-                            <rect class="shape-elem" x="215" y="49" width="70" height="22" fill="#ffffff" stroke="#0f172a" stroke-width="2.4"/>
-                            <text x="250" y="100" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">R<tspan dy="5" font-size="15">1</tspan></text>
-                            <rect class="shape-elem" x="415" y="49" width="70" height="22" fill="#ffffff" stroke="#0f172a" stroke-width="2.4"/>
-                            <text x="450" y="100" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">R<tspan dy="5" font-size="15">2</tspan></text>
-                            <rect class="shape-elem" x="339" y="155" width="22" height="70" fill="#ffffff" stroke="#0f172a" stroke-width="2.4"/>
-                            <text x="331" y="196" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">R<tspan dy="5" font-size="15">3</tspan></text>
+                            <rect class="shape-elem" x="215" y="49" width="70" height="22" fill="#fffdf9" stroke="#1c1109" stroke-width="2.4"/>
+                            <text x="250" y="100" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">R<tspan dy="5" font-size="15">1</tspan></text>
+                            <rect class="shape-elem" x="415" y="49" width="70" height="22" fill="#fffdf9" stroke="#1c1109" stroke-width="2.4"/>
+                            <text x="450" y="100" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">R<tspan dy="5" font-size="15">2</tspan></text>
+                            <rect class="shape-elem" x="339" y="155" width="22" height="70" fill="#fffdf9" stroke="#1c1109" stroke-width="2.4"/>
+                            <text x="331" y="196" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">R<tspan dy="5" font-size="15">3</tspan></text>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h12-nhanh" data-sym="Nhánh (I1, I2, I3)" data-name="Nhánh mạch điện (Nhánh 1, Nhánh 2, Nhánh 3)">
                             <rect x="205" y="105" width="90" height="52" fill="transparent"/>
-                            <line class="wire-path" x1="215" y1="118" x2="285" y2="118" stroke="#0f172a" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
-                            <text x="250" y="146" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">I<tspan dy="5" font-size="15">1</tspan></text>
+                            <line class="wire-path" x1="215" y1="118" x2="285" y2="118" stroke="#1c1109" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
+                            <text x="250" y="146" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">I<tspan dy="5" font-size="15">1</tspan></text>
                             <rect x="405" y="105" width="90" height="52" fill="transparent"/>
-                            <line class="wire-path" x1="415" y1="118" x2="485" y2="118" stroke="#0f172a" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
-                            <text x="450" y="146" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">I<tspan dy="5" font-size="15">2</tspan></text>
+                            <line class="wire-path" x1="415" y1="118" x2="485" y2="118" stroke="#1c1109" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
+                            <text x="450" y="146" text-anchor="middle" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">I<tspan dy="5" font-size="15">2</tspan></text>
                             <rect x="268" y="150" width="45" height="80" fill="transparent"/>
-                            <line class="wire-path" x1="298" y1="155" x2="298" y2="225" stroke="#0f172a" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
-                            <text x="290" y="198" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#0f172a">I<tspan dy="5" font-size="15">3</tspan></text>
+                            <line class="wire-path" x1="298" y1="155" x2="298" y2="225" stroke="#1c1109" stroke-width="2.2" marker-end="url(#arrow-h12)"/>
+                            <text x="290" y="198" text-anchor="end" font-family="Times New Roman, serif" font-size="21" fill="#1c1109">I<tspan dy="5" font-size="15">3</tspan></text>
                         </g>
                         <g class="svg-hotspot" data-model-id="${model.id}" data-dev-id="h12-nut" data-sym="Nút A, Nút B" data-name="Nút mạch điện (Nút A, Nút B)">
                             <circle cx="350" cy="60" r="20" fill="transparent"/>
-                            <circle class="node-elem" cx="350" cy="60" r="6.5" fill="#0f172a"/>
-                            <text x="350" y="36" text-anchor="middle" font-family="Times New Roman, serif" font-size="22" font-weight="bold" fill="#0f172a">A</text>
+                            <circle class="node-elem" cx="350" cy="60" r="6.5" fill="#1c1109"/>
+                            <text x="350" y="36" text-anchor="middle" font-family="Times New Roman, serif" font-size="22" font-weight="bold" fill="#1c1109">A</text>
                             <circle cx="350" cy="285" r="20" fill="transparent"/>
-                            <circle class="node-elem" cx="350" cy="285" r="6.5" fill="#0f172a"/>
-                            <text x="350" y="320" text-anchor="middle" font-family="Times New Roman, serif" font-size="22" font-weight="bold" fill="#0f172a">B</text>
+                            <circle class="node-elem" cx="350" cy="285" r="6.5" fill="#1c1109"/>
+                            <text x="350" y="320" text-anchor="middle" font-family="Times New Roman, serif" font-size="22" font-weight="bold" fill="#1c1109">B</text>
                         </g>
-                        <text x="350" y="355" text-anchor="middle" font-family="Times New Roman, serif" font-style="italic" font-size="19" fill="#0f172a">
+                        <text x="350" y="355" text-anchor="middle" font-family="Times New Roman, serif" font-style="italic" font-size="19" fill="#1c1109">
                             Hình 1.2 Kết cấu hình học của mạch điện
                         </text>
                     </svg>
@@ -1504,7 +2291,7 @@ HTML_TEMPLATE = r"""
             });
 
             return `
-            <h4 style="margin:14px 0 6px 0;">🖼️ Sơ đồ Mô hình Tùy chỉnh (Tương tác qua vùng đã khoanh)</h4>
+            <h4 style="margin:16px 0 8px 0; font-family:var(--font-display); color:var(--amber-light);">🖼️ Sơ đồ Mô hình Tùy chỉnh (Tương tác qua vùng đã khoanh)</h4>
             <div class="custom-diagram-wrapper">
                 <img src="${model.diagram_image}" alt="Sơ đồ mô hình" />
                 ${boxesHtml}
@@ -1515,8 +2302,9 @@ HTML_TEMPLATE = r"""
             const nodes = container.querySelectorAll('.svg-hotspot, .custom-hs-box');
             nodes.forEach(node => {
                 node.addEventListener('mousemove', (e) => {
+                    if (window.innerWidth <= 900) return;
                     const name = node.getAttribute('data-name');
-                    tooltipEl.innerHTML = `⚡ <b>${escapeHtml(name)}</b> <span style="color:#38bdf8;font-size:12px;">(Nhấn chuột trái để xem chi tiết)</span>`;
+                    tooltipEl.innerHTML = `⚡ <b>${escapeHtml(name)}</b> <span style="color:#fbbf24;font-size:12px;">(Nhấn để xem chi tiết)</span>`;
                     tooltipEl.style.display = 'block';
                     let leftPos = e.clientX + 14;
                     let topPos = e.clientY - 36;
@@ -1553,9 +2341,9 @@ HTML_TEMPLATE = r"""
             let symButtonsHtml = '';
             if (symbolDevs.length) {
                 symButtonsHtml += `
-                <div class="glass-card" style="margin-top:14px;">
-                    <h4 style="margin:0 0 10px 0;">⚡ Các Ký hiệu Thiết bị trên Mô hình (Nhấn trực tiếp trên bản vẽ hoặc nút ký hiệu bên dưới)</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
+                <div class="glass-card" style="margin-top:16px;">
+                    <h4 style="margin:0 0 12px 0; font-family:var(--font-display); color:var(--amber-light);">⚡ Các Ký hiệu Thiết bị trên Mô hình (Chạm trực tiếp trên bản vẽ hoặc chọn Badge bên dưới)</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap:10px;">
                         ${symbolDevs.map(d => `
                             <button class="btn btn-primary" title="Tên thiết bị: ${escapeHtml(d.name)}"
                                     onclick="navigateToDeviceDetail('${model.id}', '${d.device_id}', '${escapeHtml(d.symbol)}')">
@@ -1569,13 +2357,13 @@ HTML_TEMPLATE = r"""
             let nonSymHtml = '';
             if (nonSymbolDevs.length) {
                 nonSymHtml += `
-                <div class="glass-card" style="margin-top:14px;">
-                    <h4 style="margin:0 0 10px 0;">📘 Khái niệm thuộc mô hình (Không có ký hiệu riêng trên hình)</h4>
+                <div class="glass-card" style="margin-top:16px;">
+                    <h4 style="margin:0 0 10px 0; font-family:var(--font-display); color:var(--amber-light);">📘 Khái niệm thuộc mô hình (Không có ký hiệu riêng trên hình)</h4>
                     ${nonSymbolDevs.map(d => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid rgba(56,189,248,0.15);">
-                            <div>
-                                <div><b>${escapeHtml(d.name)}:</b> ${escapeHtml(d.concept)}</div>
-                                <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">${escapeHtml(d.details)}</div>
+                        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(180,83,9,0.25);">
+                            <div style="flex:1; min-width:210px;">
+                                <div><b style="color:var(--amber-pale);">${escapeHtml(d.name)}:</b> ${escapeHtml(d.concept)}</div>
+                                <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">${escapeHtml(d.details)}</div>
                             </div>
                             <button class="btn btn-secondary" style="white-space:nowrap;"
                                     onclick="navigateToDeviceDetail('${model.id}', '${d.device_id}', '')">
@@ -1588,15 +2376,14 @@ HTML_TEMPLATE = r"""
 
             const body = document.getElementById('modal-model-body');
             body.innerHTML = `
-                <h2 style="margin:0 0 4px 0;">📐 ${escapeHtml(model.title)} (<code>${escapeHtml(model.symbol || 'N/A')}</code>)</h2>
-                <div style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
-                    Phân loại: ${escapeHtml(model.category)} | Trạng thái: ${escapeHtml(model.status)}
+                <h2 style="margin:0 0 6px 0; font-family:var(--font-display); color:var(--amber-light); padding-right:36px;">📐 ${escapeHtml(model.title)} (<code>${escapeHtml(model.symbol || 'N/A')}</code>)</h2>
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+                    Phân loại: ${escapeHtml(model.category)} | Trạng thái: <b style="color:var(--emerald-text);">${escapeHtml(model.status)}</b>
                 </div>
-                <p style="margin:0 0 12px 0; line-height:1.5;"><b>Khái niệm mô hình:</b> ${escapeHtml(model.concept)}</p>
+                <p style="margin:0 0 14px 0; line-height:1.6; color:var(--text-secondary);"><b>Khái niệm mô hình:</b> ${escapeHtml(model.concept)}</p>
                 <div class="divider"></div>
-                <p style="font-size:13.5px; color:#bae6fd; margin:10px 0;">
-                    💡 <i>Hướng dẫn: <b>Di chuột</b> trực tiếp vào các ký hiệu trên bản vẽ kỹ thuật (Nguồn, Tải, Dây dẫn, Nhánh, Nút) để xem tên thiết bị.
-                    <b>Nhấn chuột trái</b> vào ký hiệu để chuyển sang trang nội dung chi tiết.</i>
+                <p style="font-size:13.5px; color:var(--amber-pale); margin:12px 0; line-height:1.5;">
+                    💡 <i>Hướng dẫn: <b>Di chuột hoặc chạm</b> trực tiếp vào các ký hiệu trên bản vẽ kỹ thuật nền Cream-Sand (Nguồn, Tải, Dây dẫn, Nhánh, Nút) để xem hiệu ứng phát sáng Hotspot và chuyển sang trang nội dung chi tiết.</i>
                 </p>
                 ${getSvgMarkup(model)}
                 ${getCustomDiagramMarkup(model)}
@@ -1614,7 +2401,7 @@ HTML_TEMPLATE = r"""
         }
 
         // ==========================================
-        // VISUAL HOTSPOT EDITOR MODAL
+        // VISUAL HOTSPOT EDITOR MODAL (HỖ TRỢ CHUỘT & CẢM ỨNG DI ĐỘNG)
         // ==========================================
         function openHotspotModal(modelId) {
             const model = modelsData.find(m => m.id === modelId);
@@ -1626,10 +2413,10 @@ HTML_TEMPLATE = r"""
             const body = document.getElementById('modal-hotspot-body');
 
             body.innerHTML = `
-                <h2 style="margin:0 0 10px 0;">🎯 Visual Hotspot Editor — ${escapeHtml(model.title)}</h2>
-                <div class="glass-card" style="margin-bottom:14px;">
-                    <h4 style="margin:0 0 10px 0;">🖼️ Bước 1: Tải ảnh sơ đồ mô hình (hoặc dán URL ảnh)</h4>
-                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; margin-bottom:10px;">
+                <h2 style="margin:0 0 12px 0; font-family:var(--font-display); color:var(--amber-light); padding-right:36px;">🎯 Visual Hotspot Editor — ${escapeHtml(model.title)}</h2>
+                <div class="glass-card" style="margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px 0; font-family:var(--font-display); color:var(--amber-pale);">🖼️ Bước 1: Tải ảnh sơ đồ mô hình (hoặc dán URL ảnh)</h4>
+                    <div class="form-grid-2">
                         <div>
                             <label>Chọn file ảnh sơ đồ (.png, .jpg, .webp)</label>
                             <input type="file" id="hs-upload-file" accept="image/*" />
@@ -1639,27 +2426,27 @@ HTML_TEMPLATE = r"""
                             <input type="text" id="hs-upload-url" value="${model.diagram_image && model.diagram_image.startsWith('http') ? escapeHtml(model.diagram_image) : ''}" placeholder="https://example.com/circuit.png" />
                         </div>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn btn-primary" style="flex:1;" onclick="updateModelDiagramImage()">📸 Cập nhật ảnh sơ đồ</button>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                        <button class="btn btn-primary" style="flex:1; min-width:180px;" onclick="updateModelDiagramImage()">📸 Cập nhật ảnh sơ đồ</button>
                         ${model.diagram_image ? `<button class="btn btn-secondary" onclick="clearModelDiagramImage()">🗑️ Xóa ảnh sơ đồ tùy chỉnh</button>` : ''}
                     </div>
                 </div>
 
                 ${!model.diagram_image ? `
                     <div class="info-alert">
-                        💡 Mô hình này chưa có ảnh sơ đồ tùy chỉnh. Hãy tải lên 1 ảnh sơ đồ ở <b>Bước 1</b> phía trên để bắt đầu kéo chuột khoanh vùng đánh dấu ký hiệu bằng tay
+                        💡 Mô hình này chưa có ảnh sơ đồ tùy chỉnh. Hãy tải lên 1 ảnh sơ đồ ở <b>Bước 1</b> phía trên để bắt đầu kéo khoanh vùng đánh dấu ký hiệu bằng tay
                         (Hai bản vẽ SVG gốc <b>Hình 1.1</b> và <b>Hình 1.2</b> vẫn luôn được giữ nguyên 100%).
                     </div>
                 ` : `
                     <div class="glass-card">
-                        <h4 style="margin:0 0 8px 0;">🎯 Bước 2: Chọn Thiết bị & Kéo chuột trái trên ảnh sơ đồ để khoanh vùng ký hiệu</h4>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center;">
-                            <select id="hs-device-select" style="flex:1; min-width:220px;">
+                        <h4 style="margin:0 0 10px 0; font-family:var(--font-display); color:var(--amber-pale);">🎯 Bước 2: Chọn Thiết bị & Kéo trên ảnh sơ đồ để khoanh vùng ký hiệu</h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center;">
+                            <select id="hs-device-select" style="flex:1; min-width:200px;">
                                 ${devs.map(d => `<option value="${escapeHtml(d.device_id)}">${d.symbol ? '[' + escapeHtml(d.symbol) + '] ' : '[Không ký hiệu] '}${escapeHtml(d.name)}</option>`).join('')}
                             </select>
                             <button class="btn btn-secondary" onclick="undoHotspot()">↩️ Hoàn tác</button>
-                            <button class="btn btn-secondary" onclick="clearAllHotspots()">🗑️ Xóa hết vùng</button>
-                            <button class="btn btn-primary" onclick="saveHotspotsToServer()">💾 Lưu vùng khoanh ký hiệu</button>
+                            <button class="btn btn-secondary" onclick="clearAllHotspots()">🗑️ Xóa hết</button>
+                            <button class="btn btn-primary" onclick="saveHotspotsToServer()">💾 Lưu vùng khoanh</button>
                         </div>
                         <div class="canvas-stage-wrap">
                             <div id="editor-stage">
@@ -1668,9 +2455,9 @@ HTML_TEMPLATE = r"""
                                 <div id="rubber-band"></div>
                             </div>
                         </div>
-                        <div style="margin-top:8px; font-size:12.5px; color:var(--text-muted); display:flex; justify-content:space-between;">
+                        <div style="margin-top:10px; font-size:12.5px; color:var(--text-muted); display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px;">
                             <span id="hs-count-label">Đã khoanh ${editorHotspots.length} vùng ký hiệu.</span>
-                            <span style="color:var(--cyan);">💡 Kéo chuột trái trên ảnh để vẽ khung khoanh vùng ký hiệu</span>
+                            <span style="color:var(--amber-light);">💡 Kéo chuột hoặc chạm kéo trên ảnh để vẽ khung khoanh vùng</span>
                         </div>
                     </div>
                 `}
@@ -1724,37 +2511,37 @@ HTML_TEMPLATE = r"""
             let isDrawing = false;
             let startX = 0, startY = 0;
 
-            stage.onmousedown = (e) => {
-                if (e.button !== 0 || e.target.classList.contains('del-hs-btn')) return;
+            function startDrag(clientX, clientY, target) {
+                if (target && target.classList && target.classList.contains('del-hs-btn')) return;
                 const rect = stage.getBoundingClientRect();
                 isDrawing = true;
-                startX = e.clientX - rect.left;
-                startY = e.clientY - rect.top;
+                startX = clientX - rect.left;
+                startY = clientY - rect.top;
                 rubber.style.left = startX + 'px';
                 rubber.style.top = startY + 'px';
                 rubber.style.width = '0px';
                 rubber.style.height = '0px';
                 rubber.style.display = 'block';
-            };
+            }
 
-            stage.onmousemove = (e) => {
+            function moveDrag(clientX, clientY) {
                 if (!isDrawing) return;
                 const rect = stage.getBoundingClientRect();
-                const curX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-                const curY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+                const curX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+                const curY = Math.max(0, Math.min(clientY - rect.top, rect.height));
                 rubber.style.left = Math.min(startX, curX) + 'px';
                 rubber.style.top = Math.min(startY, curY) + 'px';
                 rubber.style.width = Math.abs(curX - startX) + 'px';
                 rubber.style.height = Math.abs(curY - startY) + 'px';
-            };
+            }
 
-            window.onmouseup = (e) => {
+            function endDrag(clientX, clientY) {
                 if (!isDrawing) return;
                 isDrawing = false;
                 rubber.style.display = 'none';
                 const rect = stage.getBoundingClientRect();
-                const curX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-                const curY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+                const curX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+                const curY = Math.max(0, Math.min(clientY - rect.top, rect.height));
                 const leftPx = Math.min(startX, curX);
                 const topPx = Math.min(startY, curY);
                 const widthPx = Math.abs(curX - startX);
@@ -1775,6 +2562,30 @@ HTML_TEMPLATE = r"""
                     h: Math.round((heightPx / rect.height) * 10000) / 100
                 });
                 renderEditorBoxes();
+            }
+
+            stage.onmousedown = (e) => {
+                if (e.button !== 0) return;
+                startDrag(e.clientX, e.clientY, e.target);
+            };
+            stage.onmousemove = (e) => moveDrag(e.clientX, e.clientY);
+            window.onmouseup = (e) => endDrag(e.clientX, e.clientY);
+
+            stage.ontouchstart = (e) => {
+                if (!e.touches || !e.touches[0]) return;
+                if (e.target && e.target.classList && e.target.classList.contains('del-hs-btn')) return;
+                e.preventDefault();
+                startDrag(e.touches[0].clientX, e.touches[0].clientY, e.target);
+            };
+            stage.ontouchmove = (e) => {
+                if (!isDrawing || !e.touches || !e.touches[0]) return;
+                e.preventDefault();
+                moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            };
+            stage.ontouchend = (e) => {
+                if (!isDrawing) return;
+                const touch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+                if (touch) endDrag(touch.clientX, touch.clientY);
             };
         }
 
@@ -1879,14 +2690,14 @@ HTML_TEMPLATE = r"""
             const realImages = dev.real_images || [];
             let galleryHtml = '';
             if (!realImages.length) {
-                galleryHtml = `<div class="info-alert">🖼️ Chưa có hình ảnh thực tế nào cho thiết bị này. Hãy tải ảnh lên kèm chú thích ở khung bên phải để trực quan hóa bài học!</div>`;
+                galleryHtml = `<div class="info-alert">🖼️ Chưa có hình ảnh thực tế nào cho thiết bị này. Hãy tải ảnh lên kèm chú thích ở khung bên cạnh để trực quan hóa bài học!</div>`;
             } else {
-                galleryHtml = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:14px;">`;
+                galleryHtml = `<div class="real-images-cards-grid">`;
                 realImages.forEach(img => {
                     galleryHtml += `
-                    <div class="glass-card" style="padding:12px;">
-                        <img src="${img.image_data}" style="width:100%; height:180px; object-fit:cover; border-radius:8px; background:#fff;" />
-                        <p style="font-size:13.5px; margin:10px 0;"><b>📝 Chú thích:</b> ${escapeHtml(img.caption)}</p>
+                    <div class="glass-card" style="padding:14px;">
+                        <img src="${img.image_data}" style="width:100%; height:180px; object-fit:cover; border-radius:8px; background:var(--cream-sand);" />
+                        <p style="font-size:13.5px; margin:10px 0; color:var(--text-secondary);"><b>📝 Chú thích:</b> ${escapeHtml(img.caption)}</p>
                         <button class="btn btn-secondary btn-full" onclick="deleteRealImage('${img.image_id}')">🗑️ Xóa ảnh</button>
                     </div>`;
                 });
@@ -1894,55 +2705,63 @@ HTML_TEMPLATE = r"""
             }
 
             document.getElementById('device-detail-content').innerHTML = `
-                <div class="tech-hero-banner">
-                    <span class="tech-badge">⚡ CHI TIẾT PHẦN TỬ / THIẾT BỊ TRÊN MÔ HÌNH</span>
-                    <h2 style="margin:6px 0 4px 0;">🔧 ${escapeHtml(dev.name)}</h2>
-                    <span style="color:var(--text-muted); font-size:14px;">
-                        Thuộc mô hình: <b>${escapeHtml(model.title)}</b> (<code>${escapeHtml(model.symbol || '')}</code>)
+                <div class="tech-hero-banner" style="text-align:left; padding:24px 28px;">
+                    <span class="copper-device-badge" style="margin-bottom:8px;">⚡ CHI TIẾT PHẦN TỬ / THIẾT BỊ TRÊN MÔ HÌNH</span>
+                    <h2 class="hero-title-glow" style="font-size:26px; margin:6px 0;">🔧 ${escapeHtml(dev.name)}</h2>
+                    <span style="color:var(--text-secondary); font-size:14px;">
+                        Thuộc mô hình: <b style="color:var(--amber-light);">${escapeHtml(model.title)}</b> (<code>${escapeHtml(model.symbol || '')}</code>)
                     </span>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:18px; margin-bottom:22px;">
+                <div class="detail-top-grid">
                     <div class="glass-card">
-                        <h3 style="margin-top:0;">📖 Khái niệm & Nguyên lý</h3>
-                        <p style="line-height:1.6; white-space:pre-line;">${escapeHtml(dev.concept)}</p>
-                        <div class="divider"></div>
-                        <h3>⚙️ Ví dụ & Nội dung chi tiết</h3>
-                        <p style="line-height:1.6; white-space:pre-line;">${escapeHtml(dev.details)}</p>
+                        <div>
+                            <h3 style="margin-top:0; font-family:var(--font-display); color:var(--amber-light);">📖 Khái niệm & Nguyên lý</h3>
+                            <p style="line-height:1.65; white-space:pre-line; color:var(--text-secondary);">${escapeHtml(dev.concept)}</p>
+                            <div class="divider"></div>
+                            <h3 style="font-family:var(--font-display); color:var(--amber-light);">⚙️ Ví dụ & Nội dung chi tiết</h3>
+                            <p style="line-height:1.65; white-space:pre-line; color:var(--text-secondary);">${escapeHtml(dev.details)}</p>
+                        </div>
                     </div>
                     <div class="glass-card">
-                        <h3 style="margin-top:0;">🏷️ Định danh trên Sơ đồ</h3>
-                        <div style="font-size:13px; color:var(--text-muted);">Ký hiệu trên sơ đồ</div>
-                        <div style="font-size:26px; font-weight:700; color:var(--cyan); margin:4px 0 14px 0;">
-                            ${escapeHtml(dev.symbol || 'Không có ký hiệu')}
+                        <div>
+                            <h3 style="margin-top:0; font-family:var(--font-display); color:var(--amber-light);">🏷️ Định danh Kỹ thuật</h3>
+                            <div style="font-size:12.5px; color:var(--text-muted);">Ký hiệu trên sơ đồ</div>
+                            <div style="font-size:26px; font-weight:700; font-family:var(--font-mono); color:var(--amber-cyber); margin:6px 0 16px 0;">
+                                ${escapeHtml(dev.symbol || 'Không có ký hiệu')}
+                            </div>
+                            <p style="font-size:13.5px; color:var(--text-secondary);"><b>Mã định danh (ID):</b> <code>${escapeHtml(dev.device_id)}</code></p>
+                            <p style="font-size:13.5px; color:var(--text-secondary);"><b>Danh mục:</b> ${escapeHtml(model.category)}</p>
                         </div>
-                        <p style="font-size:13.5px;"><b>Mã định danh (ID):</b> <code>${escapeHtml(dev.device_id)}</code></p>
-                        <p style="font-size:13.5px;"><b>Danh mục:</b> ${escapeHtml(model.category)}</p>
-                        <div class="divider"></div>
-                        <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="openModelModal('${model.id}')">
-                            🔍 Mở lại Sơ đồ Mô hình
-                        </button>
+                        <div>
+                            <div class="divider"></div>
+                            <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="openModelModal('${model.id}')">
+                                🔍 Mở lại Sơ đồ Mô hình
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="divider"></div>
-                <h3 style="margin:18px 0 12px 0;">📸 Hình ảnh thực tế của thiết bị & Chú thích</h3>
-                <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:18px;">
+                <h3 style="margin:22px 0 14px 0; font-family:var(--font-display); color:var(--amber-light);">📸 Hình ảnh thực tế của thiết bị & Chú thích</h3>
+                <div class="detail-gallery-grid">
                     <div>${galleryHtml}</div>
                     <div class="glass-card">
-                        <h4 style="margin-top:0;">➕ Thêm hình ảnh thực tế mới</h4>
-                        <div id="real-img-error" class="error-alert"></div>
-                        <div style="margin-bottom:10px;">
-                            <label>Tải ảnh thực tế từ máy tính (.png, .jpg, .webp)</label>
-                            <input type="file" id="real-img-file" accept="image/*" />
-                        </div>
-                        <div style="margin-bottom:10px;">
-                            <label>Hoặc dán đường dẫn URL hình ảnh</label>
-                            <input type="text" id="real-img-url" placeholder="https://example.com/device.jpg" />
-                        </div>
-                        <div style="margin-bottom:12px;">
-                            <label>Chú thích hình ảnh thực tế (*)</label>
-                            <textarea id="real-img-caption" rows="3" placeholder="VD: Hình thực tế Pin 9V và Ắc quy chì 12V sử dụng trong phòng thí nghiệm..."></textarea>
+                        <div>
+                            <h4 style="margin-top:0; font-family:var(--font-display); color:var(--amber-pale);">➕ Thêm hình ảnh thực tế mới</h4>
+                            <div id="real-img-error" class="error-alert"></div>
+                            <div style="margin-bottom:12px;">
+                                <label>Tải ảnh thực tế từ thiết bị (.png, .jpg, .webp)</label>
+                                <input type="file" id="real-img-file" accept="image/*" />
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label>Hoặc dán đường dẫn URL hình ảnh</label>
+                                <input type="text" id="real-img-url" placeholder="https://example.com/device.jpg" />
+                            </div>
+                            <div style="margin-bottom:14px;">
+                                <label>Chú thích hình ảnh thực tế (*)</label>
+                                <textarea id="real-img-caption" rows="3" placeholder="VD: Hình thực tế Pin 9V và Ắc quy chì 12V sử dụng trong phòng thí nghiệm..."></textarea>
+                            </div>
                         </div>
                         <button class="btn btn-primary btn-full" onclick="addRealImage()">📸 Lưu hình ảnh & Chú thích</button>
                     </div>
@@ -2001,6 +2820,7 @@ HTML_TEMPLATE = r"""
             const errBox = document.getElementById('crud-error-box');
             errBox.style.display = 'none';
             document.getElementById('crud-diagram-file').value = '';
+            if (window.innerWidth <= 900) toggleSidebar(false);
 
             if (modelId) {
                 const m = modelsData.find(item => item.id === modelId);
@@ -2125,6 +2945,7 @@ HTML_TEMPLATE = r"""
             }
         }
 
+        initResponsiveSidebarState();
         fetchModels();
     </script>
 </body>
