@@ -14,23 +14,29 @@
         "symbol": "Nguồn",
         "name": "Nguồn điện",
         "concept": "Nguồn điện là thiết bị điện tạo ra điện năng. Về nguyên lý, nguồn điện là thiết bị biến đổi các dạng năng lượng như cơ năng, hóa năng, nhiệt năng, năng lượng bức xạ mặt trời, v.v... thành điện năng.",
-        "details": "Ví dụ thực tế trong kỹ thuật: - Pin, ắc quy: Biến đổi hóa năng thành điện năng. - Máy phát điện: Biến đổi cơ năng thành điện năng. - Pin mặt trời: Biến đổi năng lượng bức xạ mặt trời thành điện năng."
+        "details": "Ví dụ thực tế trong kỹ thuật: - Pin, ắc quy: Biến đổi hóa năng thành điện năng. - Máy phát điện: Biến đổi cơ năng thành điện năng. - Pin mặt trời: Biến đổi năng lượng bức xạ mặt trời thành điện năng.",
+        "real_images": []
       },
       {
         "device_id": "dev-4d61c5cd",
         "symbol": "Tải",
         "name": "Phụ tải (Tải)",
         "concept": "Tải là các thiết bị tiêu thụ điện năng và biến đổi điện năng thành các dạng năng lượng khác như cơ năng, nhiệt năng, quang năng, v.v...",
-        "details": "Ví dụ thực tế trong kỹ thuật: - Động cơ điện: Tiêu thụ điện năng và biến điện năng thành cơ năng. - Bàn là, bếp điện: Biến điện năng thành nhiệt năng. - Bóng đèn: Biến điện năng thành quang năng."
+        "details": "Ví dụ thực tế trong kỹ thuật: - Động cơ điện: Tiêu thụ điện năng và biến điện năng thành cơ năng. - Bàn là, bếp điện: Biến điện năng thành nhiệt năng. - Bóng đèn: Biến điện năng thành quang năng.",
+        "real_images": []
       },
       {
         "device_id": "dev-4e28d179",
         "symbol": "Dây dẫn",
         "name": "Dây dẫn",
         "concept": "Dây dẫn dùng để dẫn điện từ nguồn đến phụ tải, nối các thiết bị điện tạo thành mạch kín.",
-        "details": "Ngoài nguồn điện, phụ tải và dây dẫn, trên đường dây mạch điện còn lắp đặt các thiết bị phụ trợ để bảo vệ và điều khiển như: cầu dao, áp tô mát, cầu chì, rơle..."
+        "details": "Ngoài nguồn điện, phụ tải và dây dẫn, trên đường dây mạch điện còn lắp đặt các thiết bị phụ trợ để bảo vệ và điều khiển như: cầu dao, áp tô mát, cầu chì, rơle...",
+        "real_images": []
       }
-    ]
+    ],
+    "diagram_image": "",
+    "hotspots": [],
+    "password_hash": "0f15fc79cba58be95ac05d71b05172bc462a37c1f9fc6343110dd78fb74dfac8"
   },
   {
     "id": "model-hinh-1-2",
@@ -47,43 +53,137 @@
         "symbol": "E1, E2",
         "name": "Nguồn điện (E1, E2)",
         "concept": "Nguồn điện trong sơ đồ Hình 1.2 gồm hai nguồn sức điện động E1 và E2 cung cấp điện năng cho mạch.",
-        "details": "- Nguồn E1: Nằm trên nhánh 1 (phía bên trái), nối tiếp với điện trở R1. - Nguồn E2: Nằm trên nhánh 2 (phía bên phải), nối tiếp với điện trở R2. - Ký hiệu: Hình tròn có mũi tên chỉ chiều sức điện động ở bên trong."
+        "details": "- Nguồn E1: Nằm trên nhánh 1 (phía bên trái), nối tiếp với điện trở R1. - Nguồn E2: Nằm trên nhánh 2 (phía bên phải), nối tiếp với điện trở R2. - Ký hiệu: Hình tròn có mũi tên chỉ chiều sức điện động ở bên trong.",
+        "real_images": []
       },
       {
         "device_id": "dev-0bad9fae",
         "symbol": "R1, R2, R3",
         "name": "Phụ tải / Điện trở (R1, R2, R3)",
         "concept": "Các phần tử tiêu thụ điện năng đặc trưng bởi các điện trở R1, R2, R3 phân bố trên 3 nhánh của mạch điện.",
-        "details": "- Điện trở R1: Thuộc nhánh 1, có dòng điện I1 chạy qua. - Điện trở R2: Thuộc nhánh 2, có dòng điện I2 chạy qua. - Điện trở R3: Thuộc nhánh 3 (nhánh giữa nối giữa hai nút A và B), có dòng điện I3 chạy qua."
+        "details": "- Điện trở R1: Thuộc nhánh 1, có dòng điện I1 chạy qua. - Điện trở R2: Thuộc nhánh 2, có dòng điện I2 chạy qua. - Điện trở R3: Thuộc nhánh 3 (nhánh giữa nối giữa hai nút A và B), có dòng điện I3 chạy qua.",
+        "real_images": []
       },
       {
         "device_id": "dev-85470dd7",
         "symbol": "Dây dẫn",
         "name": "Dây dẫn nối mạch",
         "concept": "Dây dẫn dùng để dẫn điện và liên kết các phần tử E1, E2, R1, R2, R3 tạo thành các nhánh và mạch vòng khép kín.",
-        "details": "Trên sơ đồ kỹ thuật, dây dẫn được biểu diễn bằng các đoạn thẳng nối liền giữa các phần tử và giao nhau tại các nút A, B."
+        "details": "Trên sơ đồ kỹ thuật, dây dẫn được biểu diễn bằng các đoạn thẳng nối liền giữa các phần tử và giao nhau tại các nút A, B.",
+        "real_images": []
       },
       {
         "device_id": "dev-47e988f8",
         "symbol": "Nhánh (I1, I2, I3)",
         "name": "Nhánh mạch điện",
         "concept": "Nhánh là 1 đoạn mạch gồm những phần tử ghép nối tiếp nhau, trong đó có cùng 1 dòng điện chạy thông từ đầu nọ đến đầu kia.",
-        "details": "Trong Hình 1.2 bao gồm 3 nhánh: - Nhánh 1: Gồm nguồn E1 và điện trở R1 (có dòng điện I1 chạy qua). - Nhánh 2: Gồm nguồn E2 và điện trở R2 (có dòng điện I2 chạy qua). - Nhánh 3: Gồm điện trở R3 nối giữa nút A và nút B (có dòng điện I3 chạy qua)."
+        "details": "Trong Hình 1.2 bao gồm 3 nhánh: - Nhánh 1: Gồm nguồn E1 và điện trở R1 (có dòng điện I1 chạy qua). - Nhánh 2: Gồm nguồn E2 và điện trở R2 (có dòng điện I2 chạy qua). - Nhánh 3: Gồm điện trở R3 nối giữa nút A và nút B (có dòng điện I3 chạy qua).",
+        "real_images": []
       },
       {
         "device_id": "dev-5430da58",
         "symbol": "Nút A, Nút B",
         "name": "Nút mạch điện",
         "concept": "Nút là giao điểm gặp nhau của 3 nhánh trở lên.",
-        "details": "Trong Hình 1.2 bao gồm 2 nút (ký hiệu bằng chấm tròn đen tại điểm giao của 3 nhánh): - Nút A: Điểm giao nhau phía trên của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3). - Nút B: Điểm giao nhau phía dưới của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3)."
+        "details": "Trong Hình 1.2 bao gồm 2 nút (ký hiệu bằng chấm tròn đen tại điểm giao của 3 nhánh): - Nút A: Điểm giao nhau phía trên của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3). - Nút B: Điểm giao nhau phía dưới của 3 nhánh (Nhánh 1, Nhánh 2, Nhánh 3).",
+        "real_images": []
       },
       {
         "device_id": "dev-53f7cffd",
         "symbol": "",
         "name": "Vòng (mạch vòng)",
         "concept": "Mạch vòng là một đường dẫn khép kín mà nó bắt đầu và kết thúc ở cùng một điểm đi qua các phần tử của mạch điện. (Khái niệm này không có ký hiệu riêng trên hình).",
-        "details": "Trong Hình 1.2 bao gồm 3 vòng: - Vòng 1: Bao gồm các phần tử: Nguồn E1, điện trở R1, điện trở R3. - Vòng 2: Bao gồm điện trở R2, nguồn E2 và điện trở R3. - Vòng 3: Bao gồm nguồn E1, điện trở R1, điện trở R2 và nguồn E2."
+        "details": "Trong Hình 1.2 bao gồm 3 vòng: - Vòng 1: Bao gồm các phần tử: Nguồn E1, điện trở R1, điện trở R3. - Vòng 2: Bao gồm điện trở R2, nguồn E2 và điện trở R3. - Vòng 3: Bao gồm nguồn E1, điện trở R1, điện trở R2 và nguồn E2.",
+        "real_images": []
       }
-    ]
+    ],
+    "diagram_image": "",
+    "hotspots": [],
+    "password_hash": "0f15fc79cba58be95ac05d71b05172bc462a37c1f9fc6343110dd78fb74dfac8"
+  },
+  {
+    "id": "model-hinh-1-3",
+    "title": "Hình 1.3: Dòng điện và điện áp",
+    "category": "1.2. Các đại lượng đặc trưng cho quá trình năng lượng điện",
+    "created_at": "2026-10-29T19:38:17.051040",
+    "status": "completed",
+    "symbol": "H1.3",
+    "diagram_type": "fig_1_3",
+    "diagram_image": "",
+    "hotspots": [],
+    "concept": "Biểu diễn các đại lượng đặc trưng cho quá trình năng lượng điện trên một nhánh mạch (a - b) bao gồm: dòng điện i chạy qua phần tử, điện áp u_ab giữa hai đầu nhánh và công suất tức thời p(t).",
+    "devices": [
+      {
+        "device_id": "h13-dongdien",
+        "symbol": "i",
+        "name": "Dòng điện (i)",
+        "concept": "Dòng điện i về trị số bằng tốc độ biến thiên của lượng điện tích q qua tiết diện ngang một vật dẫn:\nCông thức: i = dq / dt   (1.1)",
+        "details": "- Chiều dòng điện quy ước là chiều chuyển động của các điện tích dương (ion dương), ngược với chiều chuyển động của các ion âm hoặc electron (điện tử).\n- Trên một nhánh, chiều dương quy ước của dòng điện được chọn tùy ý và ký hiệu bằng mũi tên.\n- Đơn vị đo của dòng điện là Ampe. Ký hiệu là A.",
+        "real_images": []
+      },
+      {
+        "device_id": "h13-dienap",
+        "symbol": "u_ab",
+        "name": "Điện áp (u_ab)",
+        "concept": "Tại mỗi điểm trong mạch điện có một điện thế. Hiệu điện thế (hiệu thế) giữa hai điểm gọi là điện áp. Như vậy điện áp giữa hai điểm a và b có điện thế φ_a, φ_b là:\nCông thức: u_ab = φ_a - φ_b   (1.2)",
+        "details": "- Chiều điện áp quy ước là chiều từ điểm có điện thế cao đến điểm có điện thế thấp.\n- Điện áp giữa hai cực của nguồn điện khi hở mạch ngoài (dòng điện I = 0) được gọi là suất điện động E.\n- Đơn vị đo của điện áp, suất điện động là Volt. Ký hiệu là V.",
+        "real_images": []
+      },
+      {
+        "device_id": "h13-congsuat",
+        "symbol": "",
+        "name": "Công suất tức thời p(t)",
+        "concept": "Công suất tức thời của nhánh tại thời điểm t được xác định bằng tích của điện áp tức thời và dòng điện tức thời:\nCông thức: p(t) = u(t) . i(t)   (1.3)",
+        "details": "Khi chọn chiều dòng điện và điện áp trên nhánh trùng nhau, sau khi tính toán công suất p của nhánh, tại một thời điểm nào đó, dựa vào dấu của p ta có kết luận sau về quá trình năng lượng của nhánh:\n- p = u.i > 0 : nhánh nhận năng lượng.\n- p = u.i < 0 : nhánh phát năng lượng.\n- Đơn vị đo của công suất là W (Oát) hoặc kW.",
+        "real_images": []
+      }
+    ],
+    "password_hash": "0f15fc79cba58be95ac05d71b05172bc462a37c1f9fc6343110dd78fb74dfac8"
+  },
+  {
+    "id": "model-hinh-1-4",
+    "title": "Hình 1.4: Ký hiệu của điện trở",
+    "category": "1.3. Các phần tử cơ bản của mạch điện - 1.3.1. Điện trở",
+    "created_at": "2026-10-29T19:38:17.051040",
+    "status": "completed",
+    "symbol": "H1.4",
+    "diagram_type": "fig_1_4",
+    "diagram_image": "",
+    "hotspots": [],
+    "concept": "Điện trở là linh kiện điện tử thụ động trong mạch điện, có chức năng cản trở (hạn chế) dòng điện đi qua nó và chuyển đổi điện năng thành nhiệt năng. Ký hiệu: R — Đơn vị: Ω (Ohm).",
+    "devices": [
+      {
+        "device_id": "h14-dientro",
+        "symbol": "R",
+        "name": "Điện trở (R) & Hướng dẫn đọc trị số vòng màu",
+        "concept": "Điện trở là linh kiện điện tử thụ động trong mạch điện, nó có chức năng là cản trở (hạn chế) dòng điện đi qua nó, nó có thể chuyển đổi điện năng thành nhiệt năng.\n- Ký hiệu: R\n- Đơn vị: Ω (Ohm)",
+        "details": "Cách đọc trị số của điện trở theo quy ước vòng màu:\n- Thường được ký hiệu bằng 4 vòng màu. Ngoài ra còn có loại 5 vòng màu và 3 vòng màu.\n- Điện trở 4 vòng màu: Vòng số 1 và số 2 là vòng chục và vòng đơn vị; Vòng số 3 là bội số cơ số 10; Vòng số 4 là sai số của điện trở. Công thức: Trị số = (vòng 1)(vòng 2) x 10^(vòng 3).\n- Điện trở 5 vòng màu: Vòng 1, 2, 3 là 3 chữ số có nghĩa; Vòng 4 là bội số cơ số 10; Vòng 5 là sai số. Công thức: Trị số = (vòng 1)(vòng 2)(vòng 3) x 10^(vòng 4).\n- Ghi chú: Vòng màu sai số Không màu (điện trở 3 vòng màu) – mặc định là ± 20%.",
+        "real_images": []
+      }
+    ],
+    "password_hash": "0f15fc79cba58be95ac05d71b05172bc462a37c1f9fc6343110dd78fb74dfac8"
+  },
+  {
+    "id": "model-hinh-1-7",
+    "title": "Hình 1.7: Ký hiệu của cuộn dây",
+    "category": "1.3. Các phần tử cơ bản của mạch điện - 1.3.2. Cuộn dây",
+    "created_at": "2026-10-29T19:38:17.051040",
+    "status": "completed",
+    "symbol": "H1.7",
+    "diagram_type": "fig_1_7",
+    "diagram_image": "",
+    "hotspots": [],
+    "concept": "Cuộn cảm (Inductor) còn được gọi là cuộn dây (coil, choke) là linh kiện điện tử thụ động dùng để lưu trữ năng lượng dưới dạng từ trường khi có dòng điện chạy qua. Ký hiệu: L — Đơn vị: H (Henry), 1 mH = 10^-3 H.",
+    "devices": [
+      {
+        "device_id": "h17-cuonday",
+        "symbol": "L",
+        "name": "Cuộn dây / Cuộn cảm (L) & Hướng dẫn đọc trị số điện cảm",
+        "concept": "Cuộn cảm (Inductor) còn được gọi là cuộn dây (coil, choke) là linh kiện điện tử thụ động dùng để lưu trữ năng lượng dưới dạng từ trường khi có dòng điện chạy qua.\n- Ký hiệu: L\n- Đơn vị: H (Henry) (1 mH = 10^-3 H)",
+        "details": "Tính chất của cuộn dây:\n- i là dòng điện đi qua cuộn dây\n- u_L là điện áp đặt giữa 2 đầu cuộn dây: u_L = L . (di / dt)   (1.4)\n- di/dt: chỉ sự biến thiên của dòng điện theo thời gian.\n- Điện áp giữa 2 đầu cuộn dây tỉ lệ với sự biến thiên của dòng điện theo thời gian.",
+        "real_images": []
+      }
+    ],
+    "password_hash": "0f15fc79cba58be95ac05d71b05172bc462a37c1f9fc6343110dd78fb74dfac8"
   }
 ]
