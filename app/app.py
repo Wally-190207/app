@@ -1,4 +1,6 @@
 import base64
+import copy
+import hashlib
 import json
 import os
 import subprocess
@@ -46,8 +48,41 @@ DATA_FILE = os.path.join(BASE_DIR, "data.json")
 CONFIG_FILE = os.path.join(BASE_DIR, "github_sync_config.json")
 
 # ==========================================
-# 1. QUẢN LÝ DỮ LIỆU & LƯU TRỮ (DATA LAYER)
+# 1. TẦNG BẢO MẬT SHA-256, DỮ LIỆU & LƯU TRỮ (SECURITY & DATA LAYER)
 # ==========================================
+DEFAULT_PASSWORD_RAW = "19022007"
+
+
+def hash_password(raw_password: str) -> str:
+    """Băm mật khẩu một chiều bằng thuật toán SHA-256."""
+    cleaned = (raw_password or "").strip()
+    return hashlib.sha256(cleaned.encode("utf-8")).hexdigest()
+
+
+DEFAULT_PASSWORD_HASH = hash_password(DEFAULT_PASSWORD_RAW)
+
+
+def verify_model_password(model: dict, input_password: str) -> bool:
+    """Kiểm tra mật khẩu người dùng nhập so với password_hash của mô hình (mặc định: 19022007)."""
+    if not isinstance(model, dict):
+        return False
+    stored_hash = (model.get("password_hash") or "").strip() or DEFAULT_PASSWORD_HASH
+    input_hash = hash_password(input_password or "")
+    return input_hash == stored_hash
+
+
+def _sanitize_models_for_client(data: list) -> list:
+    """Loại bỏ trường password_hash trước khi gửi dữ liệu về Client để bảo mật."""
+    sanitized = []
+    for item in data:
+        if isinstance(item, dict):
+             cloned = copy.deepcopy(item)
+             cloned.pop("password_hash", None)
+             cloned["is_protected"] = True
+             sanitized.append(cloned)
+    return sanitized
+
+
 DEFAULT_DATA = [
     {
         "id": "model-hinh-1-1",
@@ -59,6 +94,7 @@ DEFAULT_DATA = [
         "diagram_type": "fig_1_1",
         "diagram_image": "",
         "hotspots": [],
+        "password_hash": DEFAULT_PASSWORD_HASH,
         "concept": (
             "Mạch điện là tập hợp các thiết bị điện nối với nhau bằng các dây dẫn tạo thành những mạch kín "
             "trong đó dòng điện có thể chạy qua. Mạch điện thường gồm các phần tử: nguồn điện, phụ tải (tải), "
@@ -120,6 +156,7 @@ DEFAULT_DATA = [
         "diagram_type": "fig_1_2",
         "diagram_image": "",
         "hotspots": [],
+        "password_hash": DEFAULT_PASSWORD_HASH,
         "concept": (
             "Kết cấu hình học của mạch điện được mô tả thông qua các phần tử cơ bản (Nguồn, Tải, Dây dẫn) "
             "và các khái niệm hình học của mạch gồm: Nhánh, Nút và Vòng (mạch vòng)."
@@ -217,6 +254,7 @@ DEFAULT_DATA = [
         "diagram_type": "fig_1_3",
         "diagram_image": "",
         "hotspots": [],
+        "password_hash": DEFAULT_PASSWORD_HASH,
         "concept": (
             "Biểu diễn các đại lượng đặc trưng cho quá trình năng lượng điện trên một nhánh mạch (a - b) "
             "bao gồm: dòng điện i chạy qua phần tử, điện áp u_ab giữa hai đầu nhánh và công suất tức thời p(t)."
@@ -283,6 +321,7 @@ DEFAULT_DATA = [
         "diagram_type": "fig_1_4",
         "diagram_image": "",
         "hotspots": [],
+        "password_hash": DEFAULT_PASSWORD_HASH,
         "concept": (
             "Điện trở là linh kiện điện tử thụ động trong mạch điện, có chức năng cản trở (hạn chế) dòng điện đi qua nó "
             "và chuyển đổi điện năng thành nhiệt năng. Ký hiệu: R — Đơn vị: Ω (Ohm)."
@@ -319,6 +358,7 @@ DEFAULT_DATA = [
         "diagram_type": "fig_1_7",
         "diagram_image": "",
         "hotspots": [],
+        "password_hash": DEFAULT_PASSWORD_HASH,
         "concept": (
             "Cuộn cảm (Inductor) còn được gọi là cuộn dây (coil, choke) là linh kiện điện tử thụ động dùng để lưu trữ "
             "năng lượng dưới dạng từ trường khi có dòng điện chạy qua. Ký hiệu: L — Đơn vị: H (Henry), 1 mH = 10^-3 H."
@@ -470,12 +510,14 @@ def github_push_data(data: list, commit_msg: str = "Auto-sync data.json from Mod
 
 
 def _normalize_loaded_models(data: list) -> list:
-    """Đảm bảo mọi mô hình và thiết bị đều có đủ trường diagram_image, hotspots, real_images."""
+    """Đảm bảo mọi mô hình và thiết bị đều có đủ trường diagram_image, hotspots, password_hash, real_images."""
     for model in data:
         if "diagram_image" not in model or not isinstance(model["diagram_image"], str):
             model["diagram_image"] = ""
         if "hotspots" not in model or not isinstance(model["hotspots"], list):
             model["hotspots"] = []
+        if not model.get("password_hash") or not isinstance(model.get("password_hash"), str):
+            model["password_hash"] = DEFAULT_PASSWORD_HASH
         for dev in model.get("devices", []):
             if "real_images" not in dev or not isinstance(dev["real_images"], list):
                 dev["real_images"] = []
@@ -503,14 +545,14 @@ def load_data() -> list:
             save_data(normalized_remote)
             return normalized_remote
         save_data(DEFAULT_DATA)
-        return DEFAULT_DATA
+        return copy.deepcopy(DEFAULT_DATA)
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         old_symbols = {"DOL-3P", "AC-DC-7812"}
         if data and all(item.get("symbol") in old_symbols for item in data):
             save_data(DEFAULT_DATA)
-            return DEFAULT_DATA
+            return copy.deepcopy(DEFAULT_DATA)
         data = _normalize_loaded_models(data)
         data, changed = _merge_missing_default_models(data)
         if changed:
@@ -536,10 +578,7 @@ def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple:
     """
     Phân tích chuỗi nhập thiết bị theo định dạng:
     Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết
-    Hỗ trợ nội dung nhiều dòng (xuống dòng trực tiếp hoặc ký tự \\n):
-    - Dòng có đủ 4 phần ngăn cách bởi dấu '|' sẽ bắt đầu một thiết bị/khái niệm mới.
-    - Các dòng tiếp theo không chứa đủ 3 dấu '|' sẽ được nối thêm bằng dấu xuống dòng ('\n')
-      vào thiết bị liền trước (hoặc nếu có 1 dấu '|' thì phần trước nối vào Khái niệm, phần sau nối vào Chi tiết).
+    Hỗ trợ nội dung nhiều dòng (xuống dòng trực tiếp hoặc ký tự \\n).
     """
     existing_devices = existing_devices or []
     existing_by_key = {}
@@ -703,6 +742,8 @@ def validate_and_normalize_models_json(raw_data: list) -> tuple:
         item.setdefault("status", "completed")
         item.setdefault("symbol", "N/A")
         item.setdefault("concept", "")
+        if not item.get("password_hash") or not isinstance(item.get("password_hash"), str):
+            item["password_hash"] = DEFAULT_PASSWORD_HASH
         if "diagram_image" not in item or not isinstance(item["diagram_image"], str):
             item["diagram_image"] = ""
         if "hotspots" not in item or not isinstance(item["hotspots"], list):
@@ -758,7 +799,7 @@ def api_get_models():
     gh_cfg = get_github_config()
     return jsonify({
         "ok": True,
-        "models": data,
+        "models": _sanitize_models_for_client(data),
         "github": {
             "enabled": gh_cfg["enabled"],
             "repo": gh_cfg["repo"],
@@ -770,6 +811,19 @@ def api_get_models():
 @app.route("/api/models", methods=["POST"])
 def api_save_model():
     payload = request.get_json(force=True, silent=True) or {}
+
+    # Hỗ trợ kiểm tra nhanh mật khẩu khi mở hộp thoại xác thực (#modal-auth) trước khi Sửa
+    if payload.get("action") == "verify":
+        verify_id = (payload.get("id") or "").strip()
+        input_pwd = payload.get("password") or ""
+        data = load_data()
+        target_model = next((m for m in data if m["id"] == verify_id), None)
+        if not target_model:
+            return jsonify({"ok": False, "error": "Không tìm thấy mô hình cần xác thực!"}), 404
+        if not verify_model_password(target_model, input_pwd):
+            return jsonify({"ok": False, "error": "Mật khẩu không chính xác! Vui lòng kiểm tra lại."}), 403
+        return jsonify({"ok": True})
+
     edit_id = (payload.get("id") or "").strip()
     title = (payload.get("title") or "").strip()
     symbol = (payload.get("symbol") or "").strip()
@@ -779,6 +833,8 @@ def api_save_model():
     devices_list = payload.get("devices")
     devices_raw = (payload.get("devices_raw") or "").strip()
     diagram_image = payload.get("diagram_image")
+    auth_password = payload.get("auth_password") or ""
+    new_password = (payload.get("new_password") or "").strip()
 
     if not title:
         return jsonify({"ok": False, "error": "Lỗi: Tên mô hình không được để trống!"}), 400
@@ -791,8 +847,15 @@ def api_save_model():
 
     data = load_data()
     existing_model = next((m for m in data if m["id"] == edit_id), None) if edit_id else None
-    existing_devs = existing_model.get("devices", []) if existing_model else []
 
+    if existing_model:
+        if not verify_model_password(existing_model, auth_password):
+            return jsonify({
+                "ok": False,
+                "error": "Xác thực thất bại: Mật khẩu bảo vệ tài liệu không chính xác!"
+            }), 403
+
+    existing_devs = existing_model.get("devices", []) if existing_model else []
     parsed_devices, err_msg = parse_devices_input(devices_list, devices_raw, existing_devs)
     if err_msg:
         return jsonify({"ok": False, "error": f"Lỗi dữ liệu thiết bị: {err_msg}"}), 400
@@ -806,8 +869,13 @@ def api_save_model():
         existing_model["devices"] = parsed_devices
         if diagram_image is not None and diagram_image != "":
             existing_model["diagram_image"] = diagram_image
+        if new_password:
+            existing_model["password_hash"] = hash_password(new_password)
+        elif not existing_model.get("password_hash"):
+            existing_model["password_hash"] = DEFAULT_PASSWORD_HASH
         existing_model.setdefault("hotspots", [])
     else:
+        pwd_hash = hash_password(new_password) if new_password else DEFAULT_PASSWORD_HASH
         new_model = {
             "id": str(uuid.uuid4()),
             "title": title,
@@ -817,21 +885,34 @@ def api_save_model():
             "symbol": symbol,
             "diagram_image": diagram_image or "",
             "hotspots": [],
+            "password_hash": pwd_hash,
             "concept": concept,
             "devices": parsed_devices
         }
         data.insert(0, new_model)
 
     save_data(data)
-    return jsonify({"ok": True, "models": data})
+    return jsonify({"ok": True, "models": _sanitize_models_for_client(data)})
 
 
 @app.route("/api/models/<model_id>", methods=["DELETE"])
 def api_delete_model(model_id: str):
+    payload = request.get_json(force=True, silent=True) or {}
+    input_password = payload.get("password") or ""
     data = load_data()
+    target_model = next((m for m in data if m["id"] == model_id), None)
+    if not target_model:
+        return jsonify({"ok": False, "error": "Không tìm thấy mô hình cần xóa!"}), 404
+
+    if not verify_model_password(target_model, input_password):
+        return jsonify({
+            "ok": False,
+            "error": "Mật khẩu bảo vệ không chính xác! Không thể xóa tài liệu này."
+        }), 403
+
     data = [m for m in data if m["id"] != model_id]
     save_data(data)
-    return jsonify({"ok": True, "models": data})
+    return jsonify({"ok": True, "models": _sanitize_models_for_client(data)})
 
 
 @app.route("/api/models/<model_id>/hotspots", methods=["POST"])
@@ -840,7 +921,7 @@ def api_update_hotspots(model_id: str):
     diagram_image = payload.get("diagram_image")
     hotspots = payload.get("hotspots")
     data = sync_model_diagram_and_hotspots(model_id, diagram_image=diagram_image, hotspots=hotspots)
-    return jsonify({"ok": True, "models": data})
+    return jsonify({"ok": True, "models": _sanitize_models_for_client(data)})
 
 
 @app.route("/api/models/<model_id>/devices/<device_id>/images", methods=["POST"])
@@ -880,7 +961,7 @@ def api_manage_device_images(model_id: str, device_id: str):
         real_images = [img for img in real_images if img.get("image_id") != image_id]
 
     updated_data = sync_device_images_to_storage(model_id, device_id, real_images)
-    return jsonify({"ok": True, "models": updated_data})
+    return jsonify({"ok": True, "models": _sanitize_models_for_client(updated_data)})
 
 
 @app.route("/api/export", methods=["GET"])
@@ -902,7 +983,7 @@ def api_import_json():
     if err_msg:
         return jsonify({"ok": False, "error": f"Lỗi cấu trúc JSON: {err_msg}"}), 400
     save_data(normalized_data)
-    return jsonify({"ok": True, "models": normalized_data})
+    return jsonify({"ok": True, "models": _sanitize_models_for_client(normalized_data)})
 
 
 @app.route("/api/github-sync", methods=["POST"])
@@ -921,21 +1002,21 @@ def api_github_sync():
         ok, msg = github_push_data(data, "Initial sync from Model DDT Flask App")
         if not ok:
             return jsonify({"ok": False, "error": f"Kết nối thất bại: {msg}"}), 400
-        return jsonify({"ok": True, "models": data, "github": get_github_config()})
+        return jsonify({"ok": True, "models": _sanitize_models_for_client(data), "github": get_github_config()})
 
     elif action == "pull":
         pulled = github_pull_data()
         if isinstance(pulled, list):
             normalized = _normalize_loaded_models(pulled)
             save_data(normalized)
-            return jsonify({"ok": True, "models": normalized})
+            return jsonify({"ok": True, "models": _sanitize_models_for_client(normalized)})
         return jsonify({"ok": False, "error": "Không thể tải dữ liệu từ GitHub. Vui lòng kiểm tra Token hoặc tên Repo."}), 400
 
     return jsonify({"ok": False, "error": "Hành động không hợp lệ."}), 400
 
 
 # ==========================================
-# 4. GIAO DIỆN WEB TƯƠNG TÁC (TECH-BROWN ESPRESSO & CYBER AMBER DASHBOARD UI + SVG HÌNH 1.1 -> 1.7 + QUIZ ĐIỆN TRỞ & ĐIỆN CẢM)
+# 4. GIAO DIỆN WEB TƯƠNG TÁC (TECH-BROWN ESPRESSO & CYBER AMBER DASHBOARD UI + SHA-256 AUTH + SVG HÌNH 1.1 -> 1.7)
 # ==========================================
 HTML_TEMPLATE = r"""
 <!DOCTYPE html>
@@ -2233,7 +2314,7 @@ HTML_TEMPLATE = r"""
         </div>
     </div>
 
-    <!-- MODAL 3: THÊM / SỬA MÔ HÌNH (CRUD - HỖ TRỢ KHÁI NIỆM & CHI TIẾT NHIỀU DÒNG) -->
+    <!-- MODAL 3: THÊM / SỬA MÔ HÌNH (CRUD - HỖ TRỢ KHÁI NIỆM NHIỀU DÒNG & MẬT KHẨU BẢO VỆ SHA-256) -->
     <div class="modal-backdrop" id="modal-crud">
         <div class="modal-dialog">
             <button class="modal-close" onclick="closeModal('modal-crud')">✕</button>
@@ -2277,6 +2358,18 @@ HTML_TEMPLATE = r"""
                     <input type="text" id="crud-diagram-url" placeholder="https://example.com/diagram.png" />
                 </div>
             </div>
+
+            <!-- PHẦN THIẾT LẬP MẬT KHẨU BẢO VỆ (SHA-256) -->
+            <div id="crud-password-section" style="background:rgba(180,83,9,0.14); border:1px solid rgba(245,158,11,0.42); border-radius:10px; padding:12px 14px; margin-bottom:16px;">
+                <label id="crud-password-label" style="color:var(--amber-light); font-weight:700; margin-bottom:4px;">
+                    🔒 Mật khẩu bảo vệ quyền Sửa / Xóa tài liệu (Mã hóa SHA-256)
+                </label>
+                <div id="crud-password-hint" style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">
+                    Người tạo có thể tự đặt mật khẩu riêng để bảo vệ tài liệu này (Nếu để trống, hệ thống sẽ dùng mật khẩu mặc định).
+                </div>
+                <input type="password" id="crud-password" placeholder="Nhập mật khẩu bảo vệ tài liệu..." />
+            </div>
+
             <div style="margin-bottom:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
                     <label style="margin:0; font-size:13.5px; color:var(--amber-light); font-weight:700;">
@@ -2298,6 +2391,28 @@ HTML_TEMPLATE = r"""
         </div>
     </div>
 
+    <!-- MODAL 4: XÁC THỰC MẬT KHẨU BẢO VỆ TÀI LIỆU (#modal-auth) -->
+    <div class="modal-backdrop" id="modal-auth">
+        <div class="modal-dialog" style="max-width:440px;">
+            <button class="modal-close" onclick="closeModal('modal-auth')">✕</button>
+            <h3 id="auth-modal-title" style="margin-top:0; font-family:var(--font-display); color:var(--amber-light);">
+                🔒 Xác thực quyền bảo vệ tài liệu
+            </h3>
+            <p id="auth-modal-desc" style="font-size:13.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+                Vui lòng nhập mật khẩu bảo vệ của mô hình này để tiếp tục thao tác.
+            </p>
+            <div id="auth-error-box" class="error-alert"></div>
+            <div style="margin-bottom:16px;">
+                <label>Mật khẩu bảo vệ (*)</label>
+                <input type="password" id="auth-password-input" placeholder="Nhập mật khẩu..." onkeydown="if(event.key==='Enter') confirmAuthModal()" />
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-auth')">Hủy</button>
+                <button type="button" class="btn btn-primary" style="flex:1.4;" onclick="confirmAuthModal()">🔓 Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
     <div id="floating-tooltip"></div>
     <div id="toast-box"></div>
 
@@ -2308,6 +2423,9 @@ HTML_TEMPLATE = r"""
         let editorHotspots = [];
         let editorModelId = null;
         let crudDevicesDraft = [];
+        let pendingAuthAction = null; // 'edit' | 'delete'
+        let pendingAuthModelId = null;
+        let verifiedEditPassword = '';
 
         // Trạng thái Mô hình hỏi đáp (Quiz) Điện trở
         let quizState = {
@@ -2520,7 +2638,7 @@ HTML_TEMPLATE = r"""
                 <div class="glass-card">
                     <div>
                         <div class="card-top-bar">
-                            <div class="card-copper-icon" title="Mã mô hình: ${escapeHtml(model.symbol || 'N/A')}">❖</div>
+                            <div class="card-copper-icon" title="Mã mô hình: ${escapeHtml(model.symbol || 'N/A')} (Được bảo vệ bằng mật khẩu SHA-256)">❖</div>
                             ${statusBadge}
                         </div>
 
@@ -3821,7 +3939,7 @@ HTML_TEMPLATE = r"""
         }
 
         // ==========================================
-        // FORM THÊM / SỬA / XÓA MÔ HÌNH (CRUD - HỖ TRỢ KHÁI NIỆM NHIỀU DÒNG)
+        // FORM THÊM / SỬA / XÓA MÔ HÌNH & XÁC THỰC MẬT KHẨU BẢO VỆ SHA-256
         // ==========================================
         function syncCrudDevicesDraftFromDom() {
             const items = document.querySelectorAll('#crud-devices-list .crud-device-item');
@@ -3836,7 +3954,7 @@ HTML_TEMPLATE = r"""
         }
 
         function renderCrudDeviceRows() {
-            const container = document.getById ? document.getById('crud-devices-list') : document.getElementById('crud-devices-list');
+            const container = document.getElementById('crud-devices-list');
             if (!container) return;
             container.innerHTML = crudDevicesDraft.map((d, idx) => `
                 <div class="crud-device-item" data-dev-id="${escapeHtml(d.device_id || '')}">
@@ -3893,11 +4011,95 @@ HTML_TEMPLATE = r"""
             renderCrudDeviceRows();
         }
 
+        function openAuthModal(actionType, modelId) {
+            const model = modelsData.find(m => m.id === modelId);
+            if (!model) return;
+            pendingAuthAction = actionType;
+            pendingAuthModelId = modelId;
+
+            const errBox = document.getElementById('auth-error-box');
+            errBox.style.display = 'none';
+            const pwdInput = document.getElementById('auth-password-input');
+            pwdInput.value = '';
+
+            const titleEl = document.getElementById('auth-modal-title');
+            const descEl = document.getElementById('auth-modal-desc');
+            if (actionType === 'edit') {
+                titleEl.textContent = '🔒 Xác thực quyền Chỉnh sửa (Edit)';
+                descEl.innerHTML = `Nhập mật khẩu bảo vệ để chỉnh sửa mô hình <b>${escapeHtml(model.title)}</b>:`;
+            } else {
+                titleEl.textContent = '🔒 Xác thực quyền Xóa tài liệu (Delete)';
+                descEl.innerHTML = `Nhập mật khẩu bảo vệ để xác nhận xóa mô hình <b>${escapeHtml(model.title)}</b>:`;
+            }
+
+            document.getElementById('modal-auth').classList.add('active');
+            setTimeout(() => pwdInput.focus(), 80);
+        }
+
+        async function confirmAuthModal() {
+            const errBox = document.getElementById('auth-error-box');
+            errBox.style.display = 'none';
+            const pwd = document.getElementById('auth-password-input').value;
+
+            if (!pwd) {
+                errBox.textContent = 'Vui lòng nhập mật khẩu bảo vệ!';
+                errBox.style.display = 'block';
+                return;
+            }
+
+            if (pendingAuthAction === 'edit') {
+                const res = await fetch('/api/models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'verify', id: pendingAuthModelId, password: pwd })
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    errBox.textContent = data.error || 'Mật khẩu không chính xác!';
+                    errBox.style.display = 'block';
+                    return;
+                }
+                verifiedEditPassword = pwd;
+                closeModal('modal-auth');
+                openCrudModalAfterAuth(pendingAuthModelId);
+            } else if (pendingAuthAction === 'delete') {
+                const res = await fetch(`/api/models/${pendingAuthModelId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    errBox.textContent = data.error || 'Mật khẩu không chính xác!';
+                    errBox.style.display = 'block';
+                    return;
+                }
+                modelsData = data.models;
+                closeModal('modal-auth');
+                showToast('🗑️ Đã xác thực và xóa mô hình thành công!');
+                renderMainWorkspace();
+            }
+        }
+
         function openCrudModal(modelId) {
+            if (window.innerWidth <= 900) toggleSidebar(false);
+            if (modelId) {
+                openAuthModal('edit', modelId);
+                return;
+            }
+            verifiedEditPassword = '';
+            openCrudModalAfterAuth(null);
+        }
+
+        function openCrudModalAfterAuth(modelId) {
             const errBox = document.getElementById('crud-error-box');
             errBox.style.display = 'none';
             document.getElementById('crud-diagram-file').value = '';
-            if (window.innerWidth <= 900) toggleSidebar(false);
+            document.getElementById('crud-password').value = '';
+
+            const pwdLabel = document.getElementById('crud-password-label');
+            const pwdHint = document.getElementById('crud-password-hint');
+            const pwdInput = document.getElementById('crud-password');
 
             if (modelId) {
                 const m = modelsData.find(item => item.id === modelId);
@@ -3910,6 +4112,11 @@ HTML_TEMPLATE = r"""
                 document.getElementById('crud-concept').value = m.concept || '';
                 document.getElementById('crud-diagram-url').value =
                     (m.diagram_image && m.diagram_image.startsWith('http')) ? m.diagram_image : '';
+
+                pwdLabel.innerHTML = '🔒 Đổi mật khẩu bảo vệ tài liệu (Tùy chọn — Mã hóa SHA-256)';
+                pwdHint.innerHTML = 'Để trống nếu muốn giữ nguyên mật khẩu hiện tại, hoặc nhập mật khẩu mới nếu muốn thay đổi.';
+                pwdInput.placeholder = 'Để trống nếu giữ nguyên mật khẩu cũ...';
+
                 crudDevicesDraft = (m.devices || []).map(d => ({
                     device_id: d.device_id || '',
                     symbol: d.symbol ? d.symbol : '-',
@@ -3928,6 +4135,11 @@ HTML_TEMPLATE = r"""
                 document.getElementById('crud-status').value = 'completed';
                 document.getElementById('crud-concept').value = '';
                 document.getElementById('crud-diagram-url').value = '';
+
+                pwdLabel.innerHTML = '🔒 Đặt mật khẩu bảo vệ quyền Sửa / Xóa tài liệu (Mã hóa SHA-256)';
+                pwdHint.innerHTML = 'Người tạo có quyền tự đặt mật khẩu riêng để bảo vệ tài liệu của mình (Nếu để trống sẽ dùng mật khẩu mặc định).';
+                pwdInput.placeholder = 'Nhập mật khẩu riêng của bạn để bảo vệ tài liệu...';
+
                 crudDevicesDraft = [
                     {
                         device_id: '',
@@ -3972,7 +4184,9 @@ HTML_TEMPLATE = r"""
                 status: document.getElementById('crud-status').value,
                 concept: document.getElementById('crud-concept').value,
                 devices: crudDevicesDraft,
-                diagram_image: diagramImg
+                diagram_image: diagramImg,
+                auth_password: verifiedEditPassword,
+                new_password: document.getElementById('crud-password').value.trim()
             };
 
             const res = await fetch('/api/models', {
@@ -3992,15 +4206,8 @@ HTML_TEMPLATE = r"""
             renderMainWorkspace();
         }
 
-        async function deleteModel(modelId) {
-            if (!confirm('Bạn có chắc chắn muốn xóa mô hình này?')) return;
-            const res = await fetch(`/api/models/${modelId}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.ok) {
-                modelsData = data.models;
-                showToast('🗑️ Đã xóa mô hình thành công!');
-                renderMainWorkspace();
-            }
+        function deleteModel(modelId) {
+            openAuthModal('delete', modelId);
         }
 
         async function handleImportJson(event) {
