@@ -530,14 +530,16 @@ def save_data(data: list) -> None:
 
 
 # ==========================================
-# 2. VALIDATION & CRUD HELPERS (GIỮ NGUYÊN LOGIC)
+# 2. VALIDATION & CRUD HELPERS (HỖ TRỢ KHÁI NIỆM & CHI TIẾT NHIỀU DÒNG)
 # ==========================================
 def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple:
     """
-    Phân tích chuỗi nhập thiết bị theo định dạng mỗi dòng:
+    Phân tích chuỗi nhập thiết bị theo định dạng:
     Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết
-    Cho phép trường Ký hiệu (symbol) để trống hoặc nhập '-' đối với các khái niệm không có ký hiệu (như Vòng).
-    Bảo toàn device_id và real_images của các thiết bị hiện có khi chỉnh sửa.
+    Hỗ trợ nội dung nhiều dòng (xuống dòng trực tiếp hoặc ký tự \\n):
+    - Dòng có đủ 4 phần ngăn cách bởi dấu '|' sẽ bắt đầu một thiết bị/khái niệm mới.
+    - Các dòng tiếp theo không chứa đủ 3 dấu '|' sẽ được nối thêm bằng dấu xuống dòng ('\n')
+      vào thiết bị liền trước (hoặc nếu có 1 dấu '|' thì phần trước nối vào Khái niệm, phần sau nối vào Chi tiết).
     """
     existing_devices = existing_devices or []
     existing_by_key = {}
@@ -546,22 +548,53 @@ def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple:
         existing_by_key[key_pair] = ed
         existing_by_key[ed.get("name", "").strip()] = ed
 
-    devices = []
-    lines = [line.strip() for line in raw_text.strip().split("\n") if line.strip()]
-    if not lines:
+    raw_lines = (raw_text or "").replace("\r\n", "\n").split("\n")
+    parsed_records = []
+
+    for idx, line in enumerate(raw_lines, start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) >= 4:
+            raw_symbol = parts[0]
+            name = parts[1]
+            concept = parts[2].replace("\\n", "\n")
+            details = "|".join(parts[3:]).strip().replace("\\n", "\n")
+            parsed_records.append({
+                "line_no": idx,
+                "raw_symbol": raw_symbol,
+                "name": name,
+                "concept": concept,
+                "details": details
+            })
+        else:
+            if parsed_records:
+                if len(parts) == 2:
+                    if parts[0]:
+                        parsed_records[-1]["concept"] += "\n" + parts[0].replace("\\n", "\n")
+                    if parts[1]:
+                        parsed_records[-1]["details"] += "\n" + parts[1].replace("\\n", "\n")
+                else:
+                    parsed_records[-1]["details"] += "\n" + stripped.replace("\\n", "\n")
+            else:
+                return [], (
+                    f"Dòng thứ {idx} thiếu trường thông tin. "
+                    "Vui lòng nhập đủ 4 phần: Ký hiệu (hoặc '-' nếu không có) | Tên thiết bị | Khái niệm | Nội dung chi tiết"
+                )
+
+    if not parsed_records:
         return [], "Mô hình phải có ít nhất 1 thiết bị hoặc khái niệm."
 
-    for idx, line in enumerate(lines, start=1):
-        parts = [p.strip() for p in line.split("|")]
-        if len(parts) < 4:
-            return [], (
-                f"Dòng thứ {idx} thiếu trường thông tin. "
-                "Vui lòng nhập đủ 4 phần: Ký hiệu (hoặc '-' nếu không có) | Tên thiết bị | Khái niệm | Nội dung chi tiết"
-            )
-        raw_symbol, name, concept, details = parts[0], parts[1], parts[2], parts[3]
+    devices = []
+    for idx, rec in enumerate(parsed_records, start=1):
+        raw_symbol = rec["raw_symbol"]
+        name = rec["name"]
+        concept = rec["concept"].strip()
+        details = rec["details"].strip()
         if not name or not concept or not details:
             return [], (
-                f"Dòng thứ {idx}: Tên thiết bị, Khái niệm và Nội dung chi tiết không được để trống."
+                f"Mục thiết bị thứ {idx}: Tên thiết bị, Khái niệm và Nội dung chi tiết không được để trống."
             )
         normalized_symbol = "" if raw_symbol == "-" else raw_symbol
 
@@ -584,10 +617,73 @@ def parse_devices_text(raw_text: str, existing_devices: list = None) -> tuple:
     return devices, ""
 
 
+def parse_devices_input(devices_payload, raw_text: str = "", existing_devices: list = None) -> tuple:
+    """
+    Xử lý danh sách thiết bị/khái niệm gửi từ form CRUD:
+    - Ưu tiên nhận mảng đối tượng `devices_payload` (hỗ trợ nhập nhiều dòng trực tiếp cho từng Khái niệm và Chi tiết).
+    - Nếu không có mảng `devices_payload`, tự động chuyển sang phân tích `raw_text` qua `parse_devices_text`.
+    """
+    existing_devices = existing_devices or []
+    if isinstance(devices_payload, list) and len(devices_payload) > 0:
+        existing_by_id = {ed.get("device_id"): ed for ed in existing_devices if ed.get("device_id")}
+        existing_by_key = {}
+        for ed in existing_devices:
+            key_pair = (ed.get("symbol", "").strip(), ed.get("name", "").strip())
+            existing_by_key[key_pair] = ed
+            existing_by_key[ed.get("name", "").strip()] = ed
+
+        devices = []
+        for idx, item in enumerate(devices_payload, start=1):
+            if not isinstance(item, dict):
+                continue
+            raw_symbol = (item.get("symbol") or "").strip()
+            name = (item.get("name") or "").strip()
+            concept = (item.get("concept") or "").replace("\r\n", "\n").strip()
+            details = (item.get("details") or "").replace("\r\n", "\n").strip()
+
+            if not name and not concept and not details and not raw_symbol:
+                continue
+            if not name or not concept or not details:
+                return [], (
+                    f"Thiết bị / Khái niệm thứ {idx}: Vui lòng nhập đầy đủ Tên thiết bị, Khái niệm và Nội dung chi tiết!"
+                )
+            normalized_symbol = "" if raw_symbol == "-" else raw_symbol
+            provided_id = (item.get("device_id") or "").strip()
+
+            matched_old = (
+                existing_by_id.get(provided_id)
+                or existing_by_key.get((normalized_symbol, name))
+                or existing_by_key.get(name)
+                or (existing_devices[idx - 1] if idx - 1 < len(existing_devices) else None)
+            )
+            dev_id = (
+                provided_id
+                or (matched_old["device_id"] if matched_old and "device_id" in matched_old else f"dev-{uuid.uuid4().hex[:8]}")
+            )
+            real_imgs = matched_old.get("real_images", []) if matched_old else []
+
+            devices.append({
+                "device_id": dev_id,
+                "symbol": normalized_symbol,
+                "name": name,
+                "concept": concept,
+                "details": details,
+                "real_images": real_imgs
+            })
+
+        if not devices:
+            return [], "Mô hình phải có ít nhất 1 thiết bị hoặc khái niệm."
+        return devices, ""
+
+    return parse_devices_text(raw_text, existing_devices)
+
+
 def format_devices_to_text(devices: list) -> str:
-    """Chuyển danh sách thiết bị sang chuỗi để hiển thị trong form chỉnh sửa."""
+    """Chuyển danh sách thiết bị sang chuỗi văn bản (bảo toàn ký tự xuống dòng)."""
+    escaped_nl = chr(92) + "n"
     return "\n".join(
-        f"{d.get('symbol') if d.get('symbol') else '-'} | {d.get('name', '')} | {d.get('concept', '')} | {d.get('details', '').replace(chr(10), ' ')}"
+        f"{d.get('symbol') if d.get('symbol') else '-'} | {d.get('name', '')} | "
+        f"{d.get('concept', '').replace(chr(10), escaped_nl)} | {d.get('details', '').replace(chr(10), escaped_nl)}"
         for d in devices
     )
 
@@ -679,7 +775,8 @@ def api_save_model():
     symbol = (payload.get("symbol") or "").strip()
     category = (payload.get("category") or "").strip()
     status = (payload.get("status") or "completed").strip()
-    concept = (payload.get("concept") or "").strip()
+    concept = (payload.get("concept") or "").replace("\r\n", "\n").strip()
+    devices_list = payload.get("devices")
     devices_raw = (payload.get("devices_raw") or "").strip()
     diagram_image = payload.get("diagram_image")
 
@@ -696,7 +793,7 @@ def api_save_model():
     existing_model = next((m for m in data if m["id"] == edit_id), None) if edit_id else None
     existing_devs = existing_model.get("devices", []) if existing_model else []
 
-    parsed_devices, err_msg = parse_devices_text(devices_raw, existing_devs)
+    parsed_devices, err_msg = parse_devices_input(devices_list, devices_raw, existing_devs)
     if err_msg:
         return jsonify({"ok": False, "error": f"Lỗi dữ liệu thiết bị: {err_msg}"}), 400
 
@@ -1148,7 +1245,7 @@ HTML_TEMPLATE = r"""
             background: rgba(180, 83, 9, 0.18);
         }
 
-        /* BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (GIỐNG HÌNH MẪU) */
+        /* BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (ĐÃ LƯỢC BỎ DÒNG CHỮ PHỤ ĐỀ) */
         .tech-hero-banner {
             position: relative;
             background:
@@ -1199,7 +1296,7 @@ HTML_TEMPLATE = r"""
         .hero-title-glow {
             position: relative;
             z-index: 2;
-            margin: 0 0 10px 0;
+            margin: 0 0 14px 0;
             font-family: var(--font-display);
             font-size: 33px;
             font-weight: 800;
@@ -1208,15 +1305,6 @@ HTML_TEMPLATE = r"""
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 4px 18px rgba(245, 158, 11, 0.32));
-        }
-        .hero-subtitle {
-            position: relative;
-            z-index: 2;
-            color: var(--text-secondary);
-            font-size: 14.5px;
-            max-width: 780px;
-            margin: 0 auto 18px auto;
-            line-height: 1.55;
         }
         .hero-indicators {
             position: relative;
@@ -1417,6 +1505,40 @@ HTML_TEMPLATE = r"""
             box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
         }
 
+        /* KHỐI NHẬP THIẾT BỊ / KHÁI NIỆM NHIỀU DÒNG TRONG MODAL CRUD */
+        .crud-device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .crud-device-item {
+            background: rgba(20, 12, 6, 0.85);
+            border: 1px solid rgba(217, 119, 6, 0.42);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: inset 0 0 14px rgba(180, 83, 9, 0.08);
+        }
+        .crud-device-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed rgba(180, 83, 9, 0.35);
+        }
+        .crud-device-grid-top {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .crud-device-grid-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
         /* LƯỚI NÚT & BỐ CỤC CO GIÃN */
         .card-actions-grid {
             display: grid;
@@ -1472,6 +1594,10 @@ HTML_TEMPLATE = r"""
             font-size: 13.5px;
             outline: none;
             transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        textarea {
+            line-height: 1.5;
+            resize: vertical;
         }
         input:focus, select:focus, textarea:focus {
             border-color: var(--amber-cyber);
@@ -1889,9 +2015,11 @@ HTML_TEMPLATE = r"""
             .form-grid-2,
             .detail-top-grid,
             .detail-gallery-grid,
-            .quiz-answer-grid {
+            .quiz-answer-grid,
+            .crud-device-grid-top,
+            .crud-device-grid-bottom {
                 grid-template-columns: 1fr;
-                gap: 14px;
+                gap: 12px;
             }
             .modal-backdrop { padding: 8px; }
             .modal-dialog {
@@ -2046,7 +2174,7 @@ HTML_TEMPLATE = r"""
 
         <!-- VIEW 1: MAIN WORKSPACE -->
         <div id="view-main">
-            <!-- BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (GIỐNG MẪU) -->
+            <!-- BANNER TRUNG TÂM CYBER AMBER & BLUEPRINT (ĐÃ XÓA DÒNG CHỮ PHỤ ĐỀ THEO YÊU CẦU) -->
             <div class="tech-hero-banner">
                 <!-- Họa tiết mạch đồng phát sáng bên trái -->
                 <svg class="hero-decor-left" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2073,9 +2201,6 @@ HTML_TEMPLATE = r"""
                 </svg>
 
                 <h1 class="hero-title-glow">Model ĐĐT - Kỹ thuật Điện - Điện tử</h1>
-                <p class="hero-subtitle">
-                    Hệ thống trực quan hóa sơ đồ mạch điện & học liệu tương tác — Chọn <b>Thẻ mô hình</b> hoặc các <b>Badge ký hiệu</b> để khảo sát bản vẽ kỹ thuật (<b>Hình 1.1</b> đến <b>Hình 1.7</b>), hướng dẫn đọc vòng màu <b>Điện trở / Cuộn cảm</b> kèm Quiz luyện tập và khoanh vùng Hotspot.
-                </p>
                 <div class="hero-indicators">
                     <span class="hero-indicator-bar"></span>
                     <span class="hero-indicator-bar muted"></span>
@@ -2108,7 +2233,7 @@ HTML_TEMPLATE = r"""
         </div>
     </div>
 
-    <!-- MODAL 3: THÊM / SỬA MÔ HÌNH (CRUD) -->
+    <!-- MODAL 3: THÊM / SỬA MÔ HÌNH (CRUD - HỖ TRỢ KHÁI NIỆM & CHI TIẾT NHIỀU DÒNG) -->
     <div class="modal-backdrop" id="modal-crud">
         <div class="modal-dialog">
             <button class="modal-close" onclick="closeModal('modal-crud')">✕</button>
@@ -2139,8 +2264,8 @@ HTML_TEMPLATE = r"""
                 </div>
             </div>
             <div style="margin-bottom:14px;">
-                <label>Khái niệm & Nguyên lý mô hình (*)</label>
-                <textarea id="crud-concept" rows="3" placeholder="Mô tả khái niệm và nguyên lý hoạt động tổng quát của mô hình..."></textarea>
+                <label>Khái niệm & Nguyên lý mô hình (*) — Có thể nhấn Enter xuống dòng</label>
+                <textarea id="crud-concept" rows="3" placeholder="Mô tả khái niệm và nguyên lý hoạt động tổng quát của mô hình (hỗ trợ nhiều dòng)..."></textarea>
             </div>
             <div class="form-grid-2">
                 <div>
@@ -2153,12 +2278,21 @@ HTML_TEMPLATE = r"""
                 </div>
             </div>
             <div style="margin-bottom:16px;">
-                <label>Danh sách Thiết bị / Khái niệm trên mô hình (*)</label>
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px; line-height:1.45;">
-                    Mỗi dòng 1 mục theo cú pháp: <code>Ký hiệu | Tên thiết bị | Khái niệm | Nội dung chi tiết</code>
-                    (Nhập <code>-</code> ở cột Ký hiệu nếu khái niệm không có ký hiệu trên hình, ví dụ: Vòng, Công suất tức thời).
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                    <label style="margin:0; font-size:13.5px; color:var(--amber-light); font-weight:700;">
+                        ⚡ Danh sách Thiết bị / Khái niệm trên mô hình (*)
+                    </label>
+                    <button type="button" class="btn btn-secondary" onclick="addCrudDeviceRow()">
+                        ➕ Thêm Thiết bị / Khái niệm mới
+                    </button>
                 </div>
-                <textarea id="crud-devices" rows="6"></textarea>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px; line-height:1.5;">
+                    💡 Mỗi mục tương ứng với 1 phần tử hoặc khái niệm. Bạn có thể <b>nhấn Enter xuống dòng thoải mái</b> trong ô <b>Khái niệm</b> và ô <b>Nội dung chi tiết / Công thức / Ví dụ</b> (Để trống hoặc nhập <code>-</code> ở ô Ký hiệu nếu khái niệm không có ký hiệu riêng trên hình).
+                </div>
+                <div id="crud-devices-list" class="crud-device-list"></div>
+                <button type="button" class="btn btn-secondary btn-full" onclick="addCrudDeviceRow()" style="border-style:dashed;">
+                    ➕ Thêm dòng Thiết bị / Khái niệm tiếp theo
+                </button>
             </div>
             <button class="btn btn-primary btn-full" onclick="submitCrudForm()">💾 Lưu dữ liệu</button>
         </div>
@@ -2173,6 +2307,7 @@ HTML_TEMPLATE = r"""
         let selectedDeviceId = null;
         let editorHotspots = [];
         let editorModelId = null;
+        let crudDevicesDraft = [];
 
         // Trạng thái Mô hình hỏi đáp (Quiz) Điện trở
         let quizState = {
@@ -2402,7 +2537,7 @@ HTML_TEMPLATE = r"""
                             </div>
                             <div class="card-meta-row">
                                 <span class="card-meta-icon">📖</span>
-                                <span><b>Khái niệm:</b> ${escapeHtml(model.concept)}</span>
+                                <span style="white-space:pre-line;"><b>Khái niệm:</b> ${escapeHtml(model.concept)}</span>
                             </div>
                         </div>
                     </div>
@@ -2699,7 +2834,7 @@ HTML_TEMPLATE = r"""
                     ${nonSymbolDevs.map(d => `
                         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(180,83,9,0.25);">
                             <div style="flex:1; min-width:210px;">
-                                <div><b style="color:var(--amber-pale);">${escapeHtml(d.name)}:</b> ${escapeHtml(d.concept)}</div>
+                                <div style="white-space:pre-line;"><b style="color:var(--amber-pale);">${escapeHtml(d.name)}:</b> ${escapeHtml(d.concept)}</div>
                                 <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px; white-space:pre-line;">${escapeHtml(d.details)}</div>
                             </div>
                             <button class="btn btn-secondary" style="white-space:nowrap;"
@@ -2717,7 +2852,7 @@ HTML_TEMPLATE = r"""
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
                     Phân loại: ${escapeHtml(model.category)} | Trạng thái: <b style="color:var(--emerald-text);">${escapeHtml(model.status)}</b>
                 </div>
-                <p style="margin:0 0 14px 0; line-height:1.6; color:var(--text-secondary);"><b>Khái niệm mô hình:</b> ${escapeHtml(model.concept)}</p>
+                <p style="margin:0 0 14px 0; line-height:1.6; color:var(--text-secondary); white-space:pre-line;"><b>Khái niệm mô hình:</b> ${escapeHtml(model.concept)}</p>
                 <div class="divider"></div>
                 <p style="font-size:13.5px; color:var(--amber-pale); margin:12px 0; line-height:1.5;">
                     💡 <i>Hướng dẫn: <b>Di chuột hoặc chạm</b> trực tiếp vào các ký hiệu trên bản vẽ kỹ thuật nền Cream-Sand để xem hiệu ứng phát sáng Hotspot và chuyển sang trang nội dung chi tiết.</i>
@@ -3686,8 +3821,78 @@ HTML_TEMPLATE = r"""
         }
 
         // ==========================================
-        // FORM THÊM / SỬA / XÓA MÔ HÌNH (CRUD)
+        // FORM THÊM / SỬA / XÓA MÔ HÌNH (CRUD - HỖ TRỢ KHÁI NIỆM NHIỀU DÒNG)
         // ==========================================
+        function syncCrudDevicesDraftFromDom() {
+            const items = document.querySelectorAll('#crud-devices-list .crud-device-item');
+            if (!items.length) return;
+            crudDevicesDraft = Array.from(items).map(el => ({
+                device_id: el.getAttribute('data-dev-id') || '',
+                symbol: (el.querySelector('.crud-dev-sym').value || '').trim(),
+                name: (el.querySelector('.crud-dev-name').value || '').trim(),
+                concept: el.querySelector('.crud-dev-concept').value || '',
+                details: el.querySelector('.crud-dev-details').value || ''
+            }));
+        }
+
+        function renderCrudDeviceRows() {
+            const container = document.getById ? document.getById('crud-devices-list') : document.getElementById('crud-devices-list');
+            if (!container) return;
+            container.innerHTML = crudDevicesDraft.map((d, idx) => `
+                <div class="crud-device-item" data-dev-id="${escapeHtml(d.device_id || '')}">
+                    <div class="crud-device-item-header">
+                        <span style="font-size:13px; font-weight:700; color:var(--amber-pale); font-family:var(--font-display);">
+                            #${idx + 1} — Phần tử / Khái niệm
+                        </span>
+                        ${crudDevicesDraft.length > 1 ? `
+                            <button type="button" class="btn btn-secondary" style="padding:4px 10px; font-size:12px; color:#fca5a5;" onclick="removeCrudDeviceRow(${idx})">
+                                🗑️ Xóa mục này
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="crud-device-grid-top">
+                        <div>
+                            <label>Ký hiệu (nhập <code>-</code> nếu không có)</label>
+                            <input type="text" class="crud-dev-sym" value="${escapeHtml(d.symbol || '')}" placeholder="VD: Nguồn, R, i, hoặc -" />
+                        </div>
+                        <div>
+                            <label>Tên thiết bị / khái niệm (*)</label>
+                            <input type="text" class="crud-dev-name" value="${escapeHtml(d.name || '')}" placeholder="VD: Nguồn điện, Vòng (mạch vòng)..." />
+                        </div>
+                    </div>
+                    <div class="crud-device-grid-bottom">
+                        <div>
+                            <label>Khái niệm (*) — Có thể nhấn Enter xuống dòng</label>
+                            <textarea class="crud-dev-concept" rows="3" placeholder="Nhập khái niệm (hỗ trợ nhiều dòng)...">${escapeHtml(d.concept || '')}</textarea>
+                        </div>
+                        <div>
+                            <label>Nội dung chi tiết / Công thức / Ví dụ (*) — Có thể xuống dòng</label>
+                            <textarea class="crud-dev-details" rows="3" placeholder="Nhập nội dung chi tiết, công thức, ví dụ (hỗ trợ nhiều dòng)...">${escapeHtml(d.details || '')}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addCrudDeviceRow(dev) {
+            syncCrudDevicesDraftFromDom();
+            crudDevicesDraft.push(dev || {
+                device_id: '',
+                symbol: '',
+                name: '',
+                concept: '',
+                details: ''
+            });
+            renderCrudDeviceRows();
+        }
+
+        function removeCrudDeviceRow(idx) {
+            syncCrudDevicesDraftFromDom();
+            if (crudDevicesDraft.length <= 1) return;
+            crudDevicesDraft.splice(idx, 1);
+            renderCrudDeviceRows();
+        }
+
         function openCrudModal(modelId) {
             const errBox = document.getElementById('crud-error-box');
             errBox.style.display = 'none';
@@ -3705,9 +3910,16 @@ HTML_TEMPLATE = r"""
                 document.getElementById('crud-concept').value = m.concept || '';
                 document.getElementById('crud-diagram-url').value =
                     (m.diagram_image && m.diagram_image.startsWith('http')) ? m.diagram_image : '';
-                document.getElementById('crud-devices').value = (m.devices || []).map(d =>
-                    `${d.symbol ? d.symbol : '-'} | ${d.name || ''} | ${d.concept || ''} | ${(d.details || '').replace(/\n/g, ' ')}`
-                ).join('\n');
+                crudDevicesDraft = (m.devices || []).map(d => ({
+                    device_id: d.device_id || '',
+                    symbol: d.symbol ? d.symbol : '-',
+                    name: d.name || '',
+                    concept: d.concept || '',
+                    details: d.details || ''
+                }));
+                if (!crudDevicesDraft.length) {
+                    crudDevicesDraft = [{ device_id: '', symbol: '', name: '', concept: '', details: '' }];
+                }
             } else {
                 document.getElementById('crud-id').value = '';
                 document.getElementById('crud-title').value = '';
@@ -3716,15 +3928,32 @@ HTML_TEMPLATE = r"""
                 document.getElementById('crud-status').value = 'completed';
                 document.getElementById('crud-concept').value = '';
                 document.getElementById('crud-diagram-url').value = '';
-                document.getElementById('crud-devices').value =
-                    'Nguồn | Nguồn điện | Thiết bị tạo ra điện năng | Pin, ắc quy, máy phát điện\n- | Vòng (mạch vòng) | Đường dẫn khép kín qua các phần tử | Không có ký hiệu riêng trên sơ đồ';
+                crudDevicesDraft = [
+                    {
+                        device_id: '',
+                        symbol: 'Nguồn',
+                        name: 'Nguồn điện',
+                        concept: 'Thiết bị tạo ra điện năng.\nBiến đổi các dạng năng lượng khác thành điện năng.',
+                        details: '- Pin, ắc quy: Biến đổi hóa năng thành điện năng.\n- Máy phát điện: Biến đổi cơ năng thành điện năng.'
+                    },
+                    {
+                        device_id: '',
+                        symbol: '-',
+                        name: 'Vòng (mạch vòng)',
+                        concept: 'Đường dẫn khép kín qua các phần tử của mạch điện.',
+                        details: 'Không có ký hiệu riêng trên sơ đồ.'
+                    }
+                ];
             }
+            renderCrudDeviceRows();
             document.getElementById('modal-crud').classList.add('active');
         }
 
         async function submitCrudForm() {
             const errBox = document.getElementById('crud-error-box');
             errBox.style.display = 'none';
+
+            syncCrudDevicesDraftFromDom();
 
             const fileInput = document.getElementById('crud-diagram-file');
             const urlVal = document.getElementById('crud-diagram-url').value.trim();
@@ -3742,7 +3971,7 @@ HTML_TEMPLATE = r"""
                 category: document.getElementById('crud-category').value,
                 status: document.getElementById('crud-status').value,
                 concept: document.getElementById('crud-concept').value,
-                devices_raw: document.getElementById('crud-devices').value,
+                devices: crudDevicesDraft,
                 diagram_image: diagramImg
             };
 
